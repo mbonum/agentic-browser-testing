@@ -1,11 +1,23 @@
+import base64
+
 import gradio as gr
 
-from src.webui.webui_manager import WebuiManager
 from src.webui.components.agent_settings_tab import create_agent_settings_tab
 from src.webui.components.browser_settings_tab import create_browser_settings_tab
 from src.webui.components.browser_use_agent_tab import create_browser_use_agent_tab
-from src.webui.components.deep_research_agent_tab import create_deep_research_agent_tab
 from src.webui.components.load_save_config_tab import create_load_save_config_tab
+from src.webui.webui_manager import WebuiManager
+
+
+def get_favicon_base64():
+    try:
+        with open("favicon.ico", "rb") as f:
+            return base64.b64encode(f.read()).decode("utf-8")
+    except Exception:
+        return ""
+
+
+favicon_base64 = get_favicon_base64()
 
 theme_map = {
     "Default": gr.themes.Default(),
@@ -15,7 +27,7 @@ theme_map = {
     "Origin": gr.themes.Origin(),
     "Citrus": gr.themes.Citrus(),
     "Ocean": gr.themes.Ocean(),
-    "Base": gr.themes.Base()
+    "Base": gr.themes.Base(),
 }
 
 
@@ -28,9 +40,30 @@ def create_ui(theme_name="Ocean"):
         margin-right: auto !important;
         padding-top: 10px !important;
     }
+    footer { visibility: hidden; }
     .header-text {
         text-align: center;
         margin-bottom: 20px;
+    }
+    .custom-textbox textarea {
+        overflow-y: scroll !important;
+        scrollbar-width: thin !important;
+        scrollbar-color: #888 transparent !important;
+        min-height: 200px !important;
+    }
+    .custom-textbox textarea::-webkit-scrollbar {
+        width: 8px !important;
+    }
+    .custom-textbox textarea::-webkit-scrollbar-track {
+        background: transparent !important;
+        border-radius: 4px !important;
+    }
+    .custom-textbox textarea::-webkit-scrollbar-thumb {
+        background: #888 !important;
+        border-radius: 4px !important;
+    }
+    .custom-textbox textarea::-webkit-scrollbar-thumb:hover {
+        background: #555 !important;
     }
     .tab-header-text {
         text-align: center;
@@ -57,13 +90,21 @@ def create_ui(theme_name="Ocean"):
     ui_manager = WebuiManager()
 
     with gr.Blocks(
-            title="Browser Use WebUI", theme=theme_map[theme_name], css=css, js=js_func,
+        title="DonTouch AI QA Tool",
+        theme=theme_map[theme_name],
+        css=css,
+        js=js_func,
     ) as demo:
         with gr.Row():
+            img_tag = (
+                f'<img src="data:image/x-icon;base64,{favicon_base64}" width="32" style="display: inline-block; vertical-align: middle; margin-right: 8px;">'
+                if favicon_base64
+                else "🌐"
+            )
             gr.Markdown(
-                """
-                # 🌐 Browser Use WebUI
-                ### Control your browser with AI assistance
+                f"""
+                # {img_tag} DonTouch AI QA Tool
+                ### QA Tasks Automation
                 """,
                 elem_classes=["header-text"],
             )
@@ -77,17 +118,16 @@ def create_ui(theme_name="Ocean"):
 
             with gr.TabItem("🤖 Run Agent"):
                 create_browser_use_agent_tab(ui_manager)
-
-            with gr.TabItem("🎁 Agent Marketplace"):
-                gr.Markdown(
-                    """
-                    ### Agents built on Browser-Use
-                    """,
-                    elem_classes=["tab-header-text"],
-                )
-                with gr.Tabs():
-                    with gr.TabItem("Deep Research"):
-                        create_deep_research_agent_tab(ui_manager)
+            # with gr.TabItem("🎁 Agent Marketplace"):
+            #     gr.Markdown(
+            #         """
+            #         ### Agents built on Browser-Use
+            #         """,
+            #         elem_classes=["tab-header-text"],
+            #     )
+            #     with gr.Tabs():
+            #         with gr.TabItem("Deep Research"):
+            #             create_deep_research_agent_tab(ui_manager)
 
             with gr.TabItem("📁 Load & Save Config"):
                 create_load_save_config_tab(ui_manager)

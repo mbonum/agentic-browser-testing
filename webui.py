@@ -12,7 +12,7 @@ def main():
     args = parser.parse_args()
 
     demo = create_ui(theme_name=args.theme)
-    demo.queue().launch(server_name=args.ip, server_port=args.port)
+    demo.queue().launch(server_name=args.ip, server_port=args.port, favicon_path='favicon.ico')
 
 
 if __name__ == '__main__':

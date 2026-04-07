@@ -1,13 +1,13 @@
-import os
-from distutils.util import strtobool
-import gradio as gr
 import logging
-from gradio.components import Component
+import os
+
+# from distutils.util import strtobool
+import gradio as gr
 
 from src.webui.webui_manager import WebuiManager
-from src.utils import config
 
 logger = logging.getLogger(__name__)
+
 
 async def close_browser(webui_manager: WebuiManager):
     """
@@ -27,6 +27,7 @@ async def close_browser(webui_manager: WebuiManager):
         await webui_manager.bu_browser.close()
         webui_manager.bu_browser = None
 
+
 def create_browser_settings_tab(webui_manager: WebuiManager):
     """
     Creates a browser settings tab.
@@ -40,7 +41,9 @@ def create_browser_settings_tab(webui_manager: WebuiManager):
                 label="Browser Binary Path",
                 lines=1,
                 interactive=True,
-                placeholder="e.g. '/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome'"
+                value="C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+                # linux /mnt/c/Program\\ Files/Google/Chrome/Application/chrome.exe",
+                placeholder="e.g. '/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome'",
             )
             browser_user_data_dir = gr.Textbox(
                 label="Browser User Data Dir",
@@ -52,42 +55,44 @@ def create_browser_settings_tab(webui_manager: WebuiManager):
         with gr.Row():
             use_own_browser = gr.Checkbox(
                 label="Use Own Browser",
-                value=bool(strtobool(os.getenv("USE_OWN_BROWSER", "false"))),
-                info="Use your existing browser instance",
-                interactive=True
+                value=True,
+                # bool(strtobool(os.getenv("USE_OWN_BROWSER", "false"))),
+                # info="Use your existing browser instance",
+                # interactive=True
             )
             keep_browser_open = gr.Checkbox(
                 label="Keep Browser Open",
-                value=bool(strtobool(os.getenv("KEEP_BROWSER_OPEN", "true"))),
-                info="Keep Browser Open between Tasks",
-                interactive=True
+                value=True,
+                # bool(strtobool(os.getenv("KEEP_BROWSER_OPEN", "true"))),
+                # info="Keep Browser Open between Tasks",
+                # interactive=True
             )
             headless = gr.Checkbox(
                 label="Headless Mode",
                 value=False,
                 info="Run browser without GUI",
-                interactive=True
+                interactive=True,
             )
             disable_security = gr.Checkbox(
                 label="Disable Security",
                 value=False,
                 info="Disable browser security",
-                interactive=True
+                interactive=True,
             )
 
     with gr.Group():
         with gr.Row():
             window_w = gr.Number(
                 label="Window Width",
-                value=1280,
+                value=1920,
                 info="Browser window width",
-                interactive=True
+                interactive=True,
             )
             window_h = gr.Number(
                 label="Window Height",
-                value=1100,
+                value=1200,
                 info="Browser window height",
-                interactive=True
+                interactive=True,
             )
     with gr.Group():
         with gr.Row():

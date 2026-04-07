@@ -42,7 +42,11 @@ from typing import (
 )
 from langchain_anthropic import ChatAnthropic
 from langchain_mistralai import ChatMistralAI
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_google_genai import (
+    ChatGoogleGenerativeAI,
+    HarmBlockThreshold,
+    HarmCategory,
+)
 from langchain_ollama import ChatOllama
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from langchain_ibm import ChatWatsonx
@@ -69,14 +73,15 @@ class DeepSeekR1ChatOpenAI(ChatOpenAI):
             stop: Optional[list[str]] = None,
             **kwargs: Any,
     ) -> AIMessage:
+        messages = convert_to_messages(input)
         message_history = []
-        for input_ in input:
-            if isinstance(input_, SystemMessage):
-                message_history.append({"role": "system", "content": input_.content})
-            elif isinstance(input_, AIMessage):
-                message_history.append({"role": "assistant", "content": input_.content})
+        for msg in messages:
+            if isinstance(msg, SystemMessage):
+                message_history.append({"role": "system", "content": msg.content})
+            elif isinstance(msg, AIMessage):
+                message_history.append({"role": "assistant", "content": msg.content})
             else:
-                message_history.append({"role": "user", "content": input_.content})
+                message_history.append({"role": "user", "content": msg.content})
 
         response = self.client.chat.completions.create(
             model=self.model_name,
@@ -95,14 +100,15 @@ class DeepSeekR1ChatOpenAI(ChatOpenAI):
             stop: Optional[list[str]] = None,
             **kwargs: Any,
     ) -> AIMessage:
+        messages = convert_to_messages(input)
         message_history = []
-        for input_ in input:
-            if isinstance(input_, SystemMessage):
-                message_history.append({"role": "system", "content": input_.content})
-            elif isinstance(input_, AIMessage):
-                message_history.append({"role": "assistant", "content": input_.content})
+        for msg in messages:
+            if isinstance(msg, SystemMessage):
+                message_history.append({"role": "system", "content": msg.content})
+            elif isinstance(msg, AIMessage):
+                message_history.append({"role": "assistant", "content": msg.content})
             else:
-                message_history.append({"role": "user", "content": input_.content})
+                message_history.append({"role": "user", "content": msg.content})
 
         response = self.client.chat.completions.create(
             model=self.model_name,
@@ -126,6 +132,8 @@ class DeepSeekR1ChatOllama(ChatOllama):
     ) -> AIMessage:
         org_ai_message = await super().ainvoke(input=input)
         org_content = org_ai_message.content
+        if not isinstance(org_content, str):
+            org_content = str(org_content)
         reasoning_content = org_content.split("</think>")[0].replace("<think>", "")
         content = org_content.split("</think>")[1]
         if "**JSON Response:**" in content:
@@ -142,6 +150,8 @@ class DeepSeekR1ChatOllama(ChatOllama):
     ) -> AIMessage:
         org_ai_message = super().invoke(input=input)
         org_content = org_ai_message.content
+        if not isinstance(org_content, str):
+            org_content = str(org_content)
         reasoning_content = org_content.split("</think>")[0].replace("<think>", "")
         content = org_content.split("</think>")[1]
         if "**JSON Response:**" in content:
@@ -239,7 +249,10 @@ def get_llm_model(provider: str, **kwargs):
             )
     elif provider == "google":
         return ChatGoogleGenerativeAI(
-            model=kwargs.get("model_name", "gemini-2.0-flash-exp"),
+            model=kwargs.get("model_name", "gemini-3.1-pro-preview"),
+            safety_settings={
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE
+            },
             temperature=kwargs.get("temperature", 0.0),
             api_key=api_key,
         )

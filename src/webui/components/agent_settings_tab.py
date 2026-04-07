@@ -90,7 +90,7 @@ def create_agent_settings_tab(webui_manager: WebuiManager):
             use_vision = gr.Checkbox(
                 label="Use Vision",
                 value=True,
-                info="Enable Vision(Input highlighted screenshot into LLM)",
+                info="Enable Vision (Input highlighted screenshot into LLM)",
                 interactive=True
             )
 
@@ -124,7 +124,7 @@ def create_agent_settings_tab(webui_manager: WebuiManager):
                 choices=[provider for provider, model in config.model_names.items()],
                 label="Planner LLM Provider",
                 info="Select LLM provider for LLM",
-                value=None,
+                value="google",
                 interactive=True
             )
             planner_llm_model_name = gr.Dropdown(
@@ -137,7 +137,7 @@ def create_agent_settings_tab(webui_manager: WebuiManager):
             planner_llm_temperature = gr.Slider(
                 minimum=0.0,
                 maximum=2.0,
-                value=0.6,
+                value=0.5,
                 step=0.1,
                 label="Planner LLM Temperature",
                 info="Controls randomness in model outputs",
@@ -145,9 +145,9 @@ def create_agent_settings_tab(webui_manager: WebuiManager):
             )
 
             planner_use_vision = gr.Checkbox(
-                label="Use Vision(Planner LLM)",
-                value=False,
-                info="Enable Vision(Input highlighted screenshot into LLM)",
+                label="Use Vision (Planner LLM)",
+                # value=True,
+                info="Enable Vision (Input highlighted screenshot into LLM)",
                 interactive=True
             )
 

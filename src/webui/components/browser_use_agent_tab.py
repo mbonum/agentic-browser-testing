@@ -310,8 +310,8 @@ async def run_agent_task(
     webui_manager.bu_chat_history.append({"role": "user", "content": task})
 
     yield {
-        user_input_comp: gr.Textbox(
-            value="", interactive=False, placeholder="Agent is running..."
+        user_input_comp: gr.update(
+            interactive=False, placeholder="Agent is running..."
         ),
         run_button_comp: gr.Button(value="⏳ Running...", interactive=False),
         stop_button_comp: gr.Button(interactive=True),
@@ -419,6 +419,9 @@ async def run_agent_task(
         llm_api_key,
         ollama_num_ctx if llm_provider_name == "ollama" else None,
     )
+
+    if not main_llm:
+        raise ValueError("LLM not initialized. Please check your LLM settings (Provider, Model, API Key) in the Agent Settings tab.")
 
     # Pass the webui_manager instance to the callback when wrapping it
     async def ask_callback_wrapper(
@@ -755,7 +758,6 @@ async def run_agent_task(
             final_update.update(
                 {
                     user_input_comp: gr.update(
-                        value="",
                         interactive=True,
                         placeholder="Enter your next task...",
                     ),
@@ -952,14 +954,14 @@ async def handle_clear(webui_manager: WebuiManager):
             value="<div style='...'>Browser Cleared</div>"
         ),
         webui_manager.get_component_by_id("browser_use_agent.run_button"): gr.update(
-            value="▶️ Submit Task", interactive=True
+            value="▶️ Run Agent", interactive=True
         ),
         webui_manager.get_component_by_id("browser_use_agent.stop_button"): gr.update(
             interactive=False
         ),
         webui_manager.get_component_by_id(
             "browser_use_agent.pause_resume_button"
-        ): gr.update(value="⏸️ Pause", interactive=False),
+        ): gr.update(value="⏸ Pause", interactive=False),
         webui_manager.get_component_by_id("browser_use_agent.clear_button"): gr.update(
             interactive=True
         ),
@@ -978,20 +980,15 @@ def create_browser_use_agent_tab(webui_manager: WebuiManager):
     # --- Define UI Components ---
     tab_components = {}
     with gr.Column():
-        chatbot = gr.Chatbot(
-            lambda: webui_manager.bu_chat_history,  # Load history dynamically
-            elem_id="browser_use_chatbot",
-            label="Agent Interaction",
-            type="messages",
-            height=600,
-            show_copy_button=True,
-        )
+        
         user_input = gr.Textbox(
-            label="Your Task or Response",
+            label="Your Task",
             placeholder="Enter your task here or provide assistance when asked.",
-            lines=3,
+            lines=9,
             interactive=True,
             elem_id="user_input",
+            show_copy_button=True,
+            elem_classes=["custom-textbox"],
         )
         with gr.Row():
             stop_button = gr.Button(
@@ -1003,8 +1000,16 @@ def create_browser_use_agent_tab(webui_manager: WebuiManager):
             clear_button = gr.Button(
                 "🗑️ Clear", interactive=True, variant="secondary", scale=2
             )
-            run_button = gr.Button("▶️ Submit Task", variant="primary", scale=3)
+            run_button = gr.Button("▶️ Run Agent", variant="primary", scale=3)
 
+        chatbot = gr.Chatbot(
+            lambda: webui_manager.bu_chat_history,  # Load history dynamically
+            elem_id="browser_use_chatbot",
+            label="Agent Interaction",
+            type="messages",
+            height=600,
+            show_copy_button=True,
+        )
         browser_view = gr.HTML(
             value="<div style='width:100%; height:50vh; display:flex; justify-content:center; align-items:center; border:1px solid #ccc; background-color:#f0f0f0;'><p>Browser View (Requires Headless=True)</p></div>",
             label="Browser Live View",
@@ -1024,11 +1029,11 @@ def create_browser_use_agent_tab(webui_manager: WebuiManager):
     # --- Store Components in Manager ---
     tab_components.update(
         dict(
-            chatbot=chatbot,
             user_input=user_input,
             clear_button=clear_button,
             run_button=run_button,
             stop_button=stop_button,
+            chatbot=chatbot,
             pause_resume_button=pause_resume_button,
             agent_history_file=agent_history_file,
             recording_gif=recording_gif,
