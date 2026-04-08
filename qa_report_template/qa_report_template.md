@@ -1,0 +1,69 @@
+# QA Test Report
+
+## 1. Summary
+- Project:
+- Release Version:
+- Test Cycle:
+- Report Date:
+- QA Owner:
+
+---
+
+## 3. Test Execution Summary
+| Metric | Count |
+|--------|------|
+| Total Test Cases | |
+| Executed | |
+| Passed | |
+| Failed | |
+
+---
+
+## 4. Test Case Results
+
+### ✅ Passed Test Cases
+#### TC-001: Login with valid credentials
+- Status: Passed  
+- Evidence:
+  ![Login Success](./screenshots/tc001_pass.png)
+
+---
+
+### ❌ Failed Test Cases
+#### TC-002: Login with invalid password
+- Status: Failed  
+- Error: Incorrect error message displayed  
+- Expected: "Invalid credentials"  
+- Actual: "Something went wrong"
+
+- Evidence:
+  ![Failure Screenshot](./screenshots/tc002_fail.png)
+
+---
+
+## 5. Defects Summary
+
+### DEF-101: Login error message issue
+- Severity: High
+- Status: Open
+
+- Steps to Reproduce:
+  1. Enter invalid password
+  2. Click login
+
+- Evidence:
+  ![Defect Screenshot](./screenshots/def101.png)
+
+---
+
+## 6. Automation Summary
+- Total Automated Tests:
+- Passed:
+- Failed:
+- Report Link:
+
+---
+
+## 10. Conclusion
+- Go / No-Go:
+- Comments:

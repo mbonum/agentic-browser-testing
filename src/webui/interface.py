@@ -6,6 +6,7 @@ from src.webui.components.agent_settings_tab import create_agent_settings_tab
 from src.webui.components.browser_settings_tab import create_browser_settings_tab
 from src.webui.components.browser_use_agent_tab import create_browser_use_agent_tab
 from src.webui.components.load_save_config_tab import create_load_save_config_tab
+from src.webui.components.results_tab import create_results_tab
 from src.webui.webui_manager import WebuiManager
 
 
@@ -109,15 +110,19 @@ def create_ui(theme_name="Ocean"):
                 elem_classes=["header-text"],
             )
 
-        with gr.Tabs() as tabs:
+        with gr.Tabs(selected="run_agent") as tabs:
             with gr.TabItem("⚙️ Agent Settings"):
                 create_agent_settings_tab(ui_manager)
 
             with gr.TabItem("🌐 Browser Settings"):
                 create_browser_settings_tab(ui_manager)
 
-            with gr.TabItem("🤖 Run Agent"):
+            with gr.TabItem("🤖 Run Agent", id="run_agent"):
                 create_browser_use_agent_tab(ui_manager)
+
+            with gr.TabItem("📄 Results"):
+                create_results_tab(ui_manager)
+
             # with gr.TabItem("🎁 Agent Marketplace"):
             #     gr.Markdown(
             #         """

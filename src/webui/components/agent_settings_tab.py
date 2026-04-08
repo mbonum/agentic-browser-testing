@@ -89,7 +89,8 @@ def create_agent_settings_tab(webui_manager: WebuiManager):
 
             use_vision = gr.Checkbox(
                 label="Use Vision",
-                value=True,
+                value=False,  # Relies on the DOM text/HTML
+                # True > the agent takes a screenshot and send it to the LLM. Makes the process slower and uses more tokens.
                 info="Enable Vision (Input highlighted screenshot into LLM)",
                 interactive=True
             )

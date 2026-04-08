@@ -249,7 +249,7 @@ def get_llm_model(provider: str, **kwargs):
             )
     elif provider == "google":
         return ChatGoogleGenerativeAI(
-            model=kwargs.get("model_name", "gemini-3.1-pro-preview"),
+            model=kwargs.get("model_name", "gemini-3.1-flash-lite-preview"),  # gemini-3.1-pro-preview
             safety_settings={
                 HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE
             },

@@ -75,7 +75,7 @@ def create_browser_settings_tab(webui_manager: WebuiManager):
             )
             disable_security = gr.Checkbox(
                 label="Disable Security",
-                value=False,
+                value=False,  # Disables built-in browser security overhead (like CORS checks) which can marginally speed up page loading
                 info="Disable browser security",
                 interactive=True,
             )

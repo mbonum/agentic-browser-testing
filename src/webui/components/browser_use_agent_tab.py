@@ -2,7 +2,8 @@ import asyncio
 import json
 import logging
 import os
-import uuid
+# import uuid
+from datetime import datetime
 from typing import Any, AsyncGenerator, Dict, Optional
 
 import gradio as gr
@@ -28,6 +29,33 @@ logger = logging.getLogger(__name__)
 
 
 # --- Helper Functions --- (Defined at module level)
+
+def format_prompt_name(filename):
+    """Formats the filename for display in the dropdown."""
+    name = filename[:-3]  # Remove .md
+    name = name.replace("-", " ")  # Replace hyphens with spaces
+    return name.capitalize()  # Capitalize the first letter
+
+def get_prompts():
+    try:
+        prompts_dir = "prompts"
+        if os.path.exists(prompts_dir):
+            files = [f for f in os.listdir(prompts_dir) if f.endswith('.md')]
+            return [(format_prompt_name(f), f) for f in files]
+        return []
+    except Exception as e:
+        logger.error(f"Error reading prompts directory: {e}")
+        return []
+
+def load_prompt_content(filename):
+    if not filename:
+        return ""
+    try:
+        with open(os.path.join("prompts", filename), "r", encoding="utf-8") as f:
+            return f.read()
+    except Exception as e:
+        logger.error(f"Error reading prompt file {filename}: {e}")
+        return ""
 
 
 async def _initialize_llm(
@@ -498,7 +526,7 @@ async def run_agent_task(
             )
 
         # --- 5. Initialize or Update Agent ---
-        webui_manager.bu_agent_task_id = str(uuid.uuid4())  # New ID for this task run
+        webui_manager.bu_agent_task_id = datetime.now().strftime("%Y%m%d_%H%M%S")  # New ID for this task run
         os.makedirs(
             os.path.join(save_agent_history_path, webui_manager.bu_agent_task_id),
             exist_ok=True,
@@ -981,6 +1009,13 @@ def create_browser_use_agent_tab(webui_manager: WebuiManager):
     tab_components = {}
     with gr.Column():
         
+        prompt_selector = gr.Dropdown(
+            label="Prompt Selector",
+            choices=get_prompts(),
+            interactive=True,
+            value=None,
+        )
+        
         user_input = gr.Textbox(
             label="Your Task",
             placeholder="Enter your task here or provide assistance when asked.",
@@ -1072,6 +1107,12 @@ def create_browser_use_agent_tab(webui_manager: WebuiManager):
         yield update_dict
 
     # --- Connect Event Handlers using the Wrappers --
+    prompt_selector.change(
+        fn=load_prompt_content,
+        inputs=[prompt_selector],
+        outputs=[user_input]
+    )
+    
     run_button.click(
         fn=submit_wrapper, inputs=all_managed_components, outputs=run_tab_outputs, trigger_mode="multiple"
     )
