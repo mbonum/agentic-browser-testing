@@ -301,7 +301,7 @@ async def _ask_assistant_callback(
 
 
 async def run_agent_task(
-        webui_manager: WebuiManager, components: Dict[gr.components.Component, Any]
+        webui_manager: WebuiManager, components: Dict[gr.components.Component, Any], request: gr.Request = None
 ) -> AsyncGenerator[Dict[gr.components.Component, Any], None]:
     """Handles the entire lifecycle of initializing and running the agent."""
 
@@ -526,7 +526,8 @@ async def run_agent_task(
             )
 
         # --- 5. Initialize or Update Agent ---
-        webui_manager.bu_agent_task_id = datetime.now().strftime("%Y%m%d_%H%M%S")  # New ID for this task run
+        username = request.username if request and hasattr(request, "username") and request.username else "localuser"
+        webui_manager.bu_agent_task_id = datetime.now().strftime("%Y%m%d_%H%M%S") + f"_{username}"  # New ID for this task run
         os.makedirs(
             os.path.join(save_agent_history_path, webui_manager.bu_agent_task_id),
             exist_ok=True,
@@ -824,7 +825,7 @@ async def run_agent_task(
 
 
 async def handle_submit(
-        webui_manager: WebuiManager, components: Dict[gr.components.Component, Any]
+        webui_manager: WebuiManager, components: Dict[gr.components.Component, Any], request: gr.Request = None
 ):
     """Handles clicks on the main 'Submit' button."""
     user_input_comp = webui_manager.get_component_by_id("browser_use_agent.user_input")
@@ -859,7 +860,7 @@ async def handle_submit(
         # Handle submission for a new task
         logger.info("Submit button clicked for new task.")
         # Use async generator to stream updates from run_agent_task
-        async for update in run_agent_task(webui_manager, components):
+        async for update in run_agent_task(webui_manager, components, request):
             yield update
 
 
@@ -1086,9 +1087,10 @@ def create_browser_use_agent_tab(webui_manager: WebuiManager):
 
     async def submit_wrapper(
             components_dict: Dict[Component, Any],
+            request: gr.Request
     ) -> AsyncGenerator[Dict[Component, Any], None]:
         """Wrapper for handle_submit that yields its results."""
-        async for update in handle_submit(webui_manager, components_dict):
+        async for update in handle_submit(webui_manager, components_dict, request):
             yield update
 
     async def stop_wrapper() -> AsyncGenerator[Dict[Component, Any], None]:

@@ -132,6 +132,13 @@ def generate_qa_report(test_id):
 
     # Replace basic placeholders
     report_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Extract username from test_id (e.g. YYYYMMDD_HHMMSS_username)
+    username = ""
+    parts = test_id.split("_", 2)
+    if len(parts) >= 3:
+        username = parts[2]
+        
     report_content = template.replace(
         "Report Date:", f"Report Date: {report_date}"
     ).replace(
@@ -141,8 +148,7 @@ def generate_qa_report(test_id):
     ).replace(
         "Release Version:", f"Release Version: {release_version}"
     ).replace(
-        # TODO: Add login > get username
-        "QA Owner:", "QA Owner: Mirko"
+        "QA Owner:", f"QA Owner: {username}"
     )
     
     # Create directories for report
