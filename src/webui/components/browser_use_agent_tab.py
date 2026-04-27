@@ -322,6 +322,9 @@ async def run_agent_task(
     history_file_comp = webui_manager.get_component_by_id(
         "browser_use_agent.agent_history_file"
     )
+    playwright_script_comp = webui_manager.get_component_by_id(
+        "browser_use_agent.playwright_script_file"
+    )
     gif_comp = webui_manager.get_component_by_id("browser_use_agent.recording_gif")
     browser_view_comp = webui_manager.get_component_by_id(
         "browser_use_agent.browser_view"
@@ -334,8 +337,27 @@ async def run_agent_task(
         yield {run_button_comp: gr.update(interactive=True)}
         return
 
+    import re
+    from dotenv import load_dotenv
+    load_dotenv()
+
+    # Create a display version of the task with passwords masked as ******
+    display_task = re.sub(r'<get\s+(.*?)\s+from\s+\.env>', '******', task, flags=re.IGNORECASE)
+
     # Set running state indirectly via _current_task
-    webui_manager.bu_chat_history.append({"role": "user", "content": task})
+    webui_manager.bu_chat_history.append({"role": "user", "content": display_task})
+
+    # Now resolve the actual values for the agent
+    def env_replacer(match):
+        var_name = match.group(1).strip()
+        if var_name.lower() == "it":
+            var_name = "PASSWORD"
+        val = os.getenv(var_name)
+        if val is not None:
+            return val
+        return match.group(0)
+
+    task = re.sub(r'<get\s+(.*?)\s+from\s+\.env>', env_replacer, task, flags=re.IGNORECASE)
 
     yield {
         user_input_comp: gr.update(
@@ -347,6 +369,7 @@ async def run_agent_task(
         clear_button_comp: gr.Button(interactive=False),
         chatbot_comp: gr.update(value=webui_manager.bu_chat_history),
         history_file_comp: gr.update(value=None),
+        playwright_script_comp: gr.update(value=None),
         gif_comp: gr.update(value=None),
     }
 
@@ -426,6 +449,8 @@ async def run_agent_task(
         "save_agent_history_path", "./tmp/agent_history"
     )
     save_download_path = get_browser_setting("save_download_path", "./tmp/downloads")
+    save_playwright_script_path = get_browser_setting("save_playwright_script_path") or None
+    playwright_script_language = get_browser_setting("playwright_script_language", "TypeScript")
 
     stream_vw = 70
     stream_vh = int(70 * window_h // window_w)
@@ -437,6 +462,8 @@ async def run_agent_task(
         os.makedirs(save_trace_path, exist_ok=True)
     if save_download_path:
         os.makedirs(save_download_path, exist_ok=True)
+    if save_playwright_script_path:
+        os.makedirs(save_playwright_script_path, exist_ok=True)
 
     # --- 2. Initialize LLM ---
     main_llm = await _initialize_llm(
@@ -542,6 +569,18 @@ async def run_agent_task(
             webui_manager.bu_agent_task_id,
             f"{webui_manager.bu_agent_task_id}.gif",
         )
+        playwright_script_path = None
+        playwright_ts_script_path = None
+        if save_playwright_script_path:
+            playwright_script_path = os.path.join(
+                save_playwright_script_path,
+                f"{webui_manager.bu_agent_task_id}.py",
+            )
+            if playwright_script_language == "TypeScript":
+                playwright_ts_script_path = os.path.join(
+                    save_playwright_script_path,
+                    f"{webui_manager.bu_agent_task_id}.spec.ts",
+                )
 
         # Pass the webui_manager to callbacks when wrapping them
         async def step_callback_wrapper(
@@ -578,10 +617,12 @@ async def run_agent_task(
             )
             webui_manager.bu_agent.state.agent_id = webui_manager.bu_agent_task_id
             webui_manager.bu_agent.settings.generate_gif = gif_path
+            webui_manager.bu_agent.settings.save_playwright_script_path = playwright_script_path
         else:
             webui_manager.bu_agent.state.agent_id = webui_manager.bu_agent_task_id
             webui_manager.bu_agent.add_new_task(task)
             webui_manager.bu_agent.settings.generate_gif = gif_path
+            webui_manager.bu_agent.settings.save_playwright_script_path = playwright_script_path
             webui_manager.bu_agent.browser = webui_manager.bu_browser
             webui_manager.bu_agent.browser_context = webui_manager.bu_browser_context
             webui_manager.bu_agent.controller = webui_manager.bu_controller
@@ -737,6 +778,23 @@ async def run_agent_task(
 
             if os.path.exists(history_file):
                 final_update[history_file_comp] = gr.File(value=history_file)
+
+            if playwright_script_path and os.path.exists(playwright_script_path):
+                logger.info(f"Playwright Python script found at: {playwright_script_path}")
+                # Convert Python script to TypeScript
+                if playwright_ts_script_path:
+                    try:
+                        from src.utils.playwright_script_converter import python_to_typescript_playwright
+                        python_to_typescript_playwright(playwright_script_path, playwright_ts_script_path)
+                        logger.info(f"Converted to TypeScript: {playwright_ts_script_path}")
+                        # Return TypeScript file instead of Python
+                        final_update[playwright_script_comp] = gr.File(value=playwright_ts_script_path)
+                    except Exception as e:
+                        logger.error(f"Failed to convert to TypeScript: {e}")
+                        # Fallback to Python script
+                        final_update[playwright_script_comp] = gr.File(value=playwright_script_path)
+                else:
+                    final_update[playwright_script_comp] = gr.File(value=playwright_script_path)
 
             if gif_path and os.path.exists(gif_path):
                 logger.info(f"GIF found at: {gif_path}")
@@ -976,6 +1034,9 @@ async def handle_clear(webui_manager: WebuiManager):
         webui_manager.get_component_by_id(
             "browser_use_agent.agent_history_file"
         ): gr.update(value=None),
+        webui_manager.get_component_by_id(
+            "browser_use_agent.playwright_script_file"
+        ): gr.update(value=None),
         webui_manager.get_component_by_id("browser_use_agent.recording_gif"): gr.update(
             value=None
         ),
@@ -1055,6 +1116,7 @@ def create_browser_use_agent_tab(webui_manager: WebuiManager):
         with gr.Column():
             gr.Markdown("### Task Outputs")
             agent_history_file = gr.File(label="Agent History JSON", interactive=False)
+            playwright_script_file = gr.File(label="Playwright Test Script", interactive=False)
             recording_gif = gr.Image(
                 label="Task Recording GIF",
                 format="gif",
@@ -1072,6 +1134,7 @@ def create_browser_use_agent_tab(webui_manager: WebuiManager):
             chatbot=chatbot,
             pause_resume_button=pause_resume_button,
             agent_history_file=agent_history_file,
+            playwright_script_file=playwright_script_file,
             recording_gif=recording_gif,
             browser_view=browser_view,
         )

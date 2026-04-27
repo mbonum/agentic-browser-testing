@@ -136,6 +136,21 @@ def create_browser_settings_tab(webui_manager: WebuiManager):
                 info="Specify the directory where downloaded files should be saved.",
                 interactive=True,
             )
+        with gr.Row():
+            save_playwright_script_path = gr.Textbox(
+                label="Playwright Script Save Path",
+                value="./playwright_scripts",
+                placeholder="e.g. ./playwright_scripts",
+                info="Path to save generated Playwright test scripts (leave empty to skip)",
+                interactive=True,
+            )
+            playwright_script_language = gr.Dropdown(
+                label="Script Language",
+                choices=["TypeScript", "Python"],
+                value="TypeScript",
+                info="Language for generated Playwright scripts",
+                interactive=True,
+            )
     tab_components.update(
         dict(
             browser_binary_path=browser_binary_path,
@@ -148,6 +163,8 @@ def create_browser_settings_tab(webui_manager: WebuiManager):
             save_trace_path=save_trace_path,
             save_agent_history_path=save_agent_history_path,
             save_download_path=save_download_path,
+            save_playwright_script_path=save_playwright_script_path,
+            playwright_script_language=playwright_script_language,
             cdp_url=cdp_url,
             wss_url=wss_url,
             window_h=window_h,

@@ -26,7 +26,8 @@ def main():
             else:
                 print(f"Warning: Invalid auth pair '{pair}' in WEBUI_AUTH_USERS. Expected format 'username:password'.")
 
-    demo.queue().launch(server_name=args.ip, server_port=args.port, favicon_path='favicon.ico', auth=auth_list)
+    auth_message = '<img src="x" onerror="var t=setInterval(function(){var i=document.querySelectorAll(\'input\');if(i.length>=2){i[0].placeholder=\'DT email\';i[1].placeholder=\'Password\';clearInterval(t);}},100);" style="display:none;">'
+    demo.queue().launch(server_name=args.ip, server_port=args.port, favicon_path='favicon.ico', auth=auth_list, auth_message=auth_message)
 
 
 if __name__ == '__main__':

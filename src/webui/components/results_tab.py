@@ -60,7 +60,17 @@ def load_test_details(test_id):
                 result_text += f"{current_state.get('evaluation_previous_goal', 'N/A')}\n\n"
                 
                 result_text += "**Final Memory (Task Details):**\n"
-                result_text += f"{current_state.get('memory', 'N/A')}\n\n"
+                memory_text = current_state.get('memory', 'N/A')
+                if memory_text != 'N/A':
+                    import re
+                    # Add newlines before "Step X -"
+                    memory_text = re.sub(r'(?<!\n)(Step \d+\s*-)', r'\n\1', memory_text)
+                    # Convert to "- Step X:"
+                    memory_text = re.sub(r'Step (\d+)\s*-', r'- Step \1:', memory_text)
+                    # Anonymize passwords
+                    memory_text = re.sub(r'(?i)(password\s+["\']?)[^\s:,.;"\'\[\]<>\\]+(["\']?)', r'\1********\2', memory_text)
+                    memory_text = memory_text.strip()
+                result_text += f"{memory_text}\n\n"
                 
                 actions = model_output.get("action", [])
                 for action in actions:

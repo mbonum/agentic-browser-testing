@@ -210,7 +210,7 @@ def get_llm_model(provider: str, **kwargs):
             base_url = kwargs.get("base_url")
 
         return ChatOpenAI(
-            model=kwargs.get("model_name", "gpt-4o"),
+            model=kwargs.get("model_name", "gpt-5.4"),  # gpt-4o
             temperature=kwargs.get("temperature", 0.0),
             base_url=base_url,
             api_key=api_key,
