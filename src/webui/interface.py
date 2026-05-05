@@ -91,7 +91,7 @@ def create_ui(theme_name="Ocean"):
     ui_manager = WebuiManager()
 
     with gr.Blocks(
-        title="DonTouch AI QA Tool",
+        title="QA Browser Agent | DonTouch AI",
         theme=theme_map[theme_name],
         css=css,
         js=js_func,
@@ -104,7 +104,7 @@ def create_ui(theme_name="Ocean"):
             )
             gr.Markdown(
                 f"""
-                # {img_tag} DonTouch AI QA Tool
+                # {img_tag} QA Browser Agent
                 ### QA Tasks Automation
                 """,
                 elem_classes=["header-text"],

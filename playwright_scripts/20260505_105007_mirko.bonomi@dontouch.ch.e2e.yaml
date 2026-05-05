@@ -1,0 +1,82 @@
+scenario: Login & Logout Flow
+app: app
+domain: main
+type: e2e
+priority: P0
+setup:
+  environment:
+  - SECRET_0
+  - E2E_PHONE_NUMBER
+  - PSW_CLIENT
+  baseURL: http://localhost:8888
+  browser:
+  - chromium
+pages:
+- name: MainPage
+  path: ./pages/mainpage.page.ts
+  selectors:
+    phoneInput: locator("xpath=//html/body/app-root/ion-app/div/div/ion-router-outlet/ng-component/ion-content/my-ui-page-content/div/my-auth-login-form/form/my-ui-phone-input/ion-input/label/div[3]/input")
+    passwordInput: locator("xpath=//html/body/app-root/ion-app/div/div/ion-router-outlet/ng-component/ion-content/my-ui-page-content/div/my-auth-login-form/form/my-ui-password-input/ion-input/label/div[3]/input")
+    loginButton: locator("xpath=//html/body/app-root/ion-app/div/div/ion-router-outlet/ng-component/ion-content/my-ui-page-content/div/my-auth-login-form/form/ion-button")
+    profileButton: locator("xpath=//html/body/app-root/ion-app/div/div/ion-router-outlet/ng-component/ion-header/my-main-header/ion-toolbar/my-profile-profile-select/my-ui-button-group/ion-button[1]")
+    profileButton1: locator("xpath=//html/body/app-root/ion-app/div/div/ion-router-outlet/ng-component/ion-header/my-main-header/ion-toolbar/my-profile-profile-select/my-ui-button-group/ion-button[1]")
+    IonButtonButton: locator("xpath=//html/body/app-root/ion-app/div/div/ion-router-outlet/ng-component/ion-router-outlet/ng-component/ion-content/my-ui-page-content/div[1]/div/my-elite-summary-card/div/ion-button")
+    IonButtonButton1: locator("xpath=//html/body/app-root/ion-app/div/div/ion-router-outlet/ng-component/ion-router-outlet/ng-component/ion-content/my-ui-page-content/div[1]/div/my-suspension-summary-card/div/ion-button")
+    profileButton2: locator("xpath=//html/body/app-root/ion-app/div/div/ion-router-outlet/ng-component/ion-header/my-main-header/ion-toolbar/my-profile-profile-select/my-ui-button-group/ion-button[1]")
+    profileButton3: locator("xpath=//html/body/app-root/ion-app/div/div/ion-router-outlet/ng-component/ion-router-outlet/ng-component/ion-content/my-ui-page-content/my-profile-status-banner/div/ion-button")
+    IonButtonButton2: locator("xpath=//html/body/app-root/ion-app/div/div/ion-router-outlet/ng-component/ion-router-outlet/ng-component/ion-content/my-ui-page-content/div[1]/div/my-suspension-summary-card/div/ion-button")
+    IonButtonButton3: locator("xpath=//html/body/app-root/ion-app/div/div/ion-router-outlet/ng-component/ion-router-outlet/ng-component/ion-content/my-ui-page-content/div[1]/div/my-suspension-summary-card/div/ion-button")
+    IonButtonButton4: locator("xpath=//html/body/app-root/ion-app/div/div/ion-router-outlet/ng-component/ion-router-outlet/ng-component/ion-content/my-ui-page-content/div[1]/div/my-suspension-summary-card/div/ion-button")
+    tabButton: locator("xpath=//html/body/app-root/ion-app/div/div/ion-router-outlet/ng-component/ion-footer/my-main-footer/ion-tab-bar/ion-tab-button[1]/ion-icon")
+tests:
+- name: Login & Logout Flow
+  priority: P0
+  steps:
+  - action: wait
+    duration: 1000
+  - action: input
+    selector: phoneInput
+    value: $E2E_PHONE_NUMBER
+  - action: input
+    selector: passwordInput
+    value: $PSW_CLIENT
+  - action: click
+    selector: loginButton
+  - action: click
+    selector: profileButton
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 500)');
+  - action: click
+    selector: profileButton1
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 1000)');
+  - action: click
+    selector: IonButtonButton
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 1000)');
+  - action: click
+    selector: IonButtonButton1
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 1000)');
+  - action: click
+    selector: profileButton2
+  - action: click
+    selector: profileButton3
+  - action: click
+    selector: IonButtonButton2
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 1000)');
+  - action: click
+    selector: IonButtonButton3
+  - action: click
+    selector: IonButtonButton4
+  - action: click
+    selector: tabButton
+metadata:
+  author: mirko.bonomi@dontouch.ch
+  created: '2026-05-05'
+  tags:
+  - e2e
+  - generated
+  - main
+  jira: AUTO-GENERATED

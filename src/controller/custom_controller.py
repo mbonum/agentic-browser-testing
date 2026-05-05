@@ -1,47 +1,35 @@
-import pdb
-
-import pyperclip
-from typing import Optional, Type, Callable, Dict, Any, Union, Awaitable, TypeVar
-from pydantic import BaseModel
-from browser_use.agent.views import ActionResult
-from browser_use.browser.context import BrowserContext
-from browser_use.controller.service import Controller, DoneAction
-from browser_use.controller.registry.service import Registry, RegisteredAction
-from main_content_extractor import MainContentExtractor
-from browser_use.controller.views import (
-    ClickElementAction,
-    DoneAction,
-    ExtractPageContentAction,
-    GoToUrlAction,
-    InputTextAction,
-    OpenTabAction,
-    ScrollAction,
-    SearchGoogleAction,
-    SendKeysAction,
-    SwitchTabAction,
-)
-import logging
 import inspect
-import asyncio
+import logging
 import os
-from langchain_core.language_models.chat_models import BaseChatModel
+from typing import Any, Awaitable, Callable, Dict, Optional, Type, TypeVar, Union
+
 from browser_use.agent.views import ActionModel, ActionResult
+from browser_use.browser.context import BrowserContext
+from browser_use.controller.registry.service import RegisteredAction
+from browser_use.controller.service import Controller
+from browser_use.utils import time_execution_sync
+from langchain_core.language_models.chat_models import BaseChatModel
+from pydantic import BaseModel
 
 from src.utils.mcp_client import create_tool_param_model, setup_mcp_client_and_tools
 
-from browser_use.utils import time_execution_sync
-
 logger = logging.getLogger(__name__)
 
-Context = TypeVar('Context')
+Context = TypeVar("Context")
 
 
 class CustomController(Controller):
-    def __init__(self, exclude_actions: list[str] = [],
-                 output_model: Optional[Type[BaseModel]] = None,
-                 ask_assistant_callback: Optional[Union[Callable[[str, BrowserContext], Dict[str, Any]], Callable[
-                     [str, BrowserContext], Awaitable[Dict[str, Any]]]]] = None,
-                 ):
+    def __init__(
+        self,
+        exclude_actions: list[str] = [],
+        output_model: Optional[Type[BaseModel]] = None,
+        ask_assistant_callback: Optional[
+            Union[
+                Callable[[str, BrowserContext], Dict[str, Any]],
+                Callable[[str, BrowserContext], Awaitable[Dict[str, Any]]],
+            ]
+        ] = None,
+    ):
         super().__init__(exclude_actions=exclude_actions, output_model=output_model)
         self._register_custom_actions()
         self.ask_assistant_callback = ask_assistant_callback
@@ -67,66 +55,88 @@ class CustomController(Controller):
                 logger.info(msg)
                 return ActionResult(extracted_content=msg, include_in_memory=True)
             else:
-                return ActionResult(extracted_content="Human cannot help you. Please try another way.",
-                                    include_in_memory=True)
+                return ActionResult(
+                    extracted_content="Human cannot help you. Please try another way.",
+                    include_in_memory=True,
+                )
 
         @self.registry.action(
-            'Upload file to interactive element with file path ',
+            "Upload file to interactive element with file path ",
         )
-        async def upload_file(index: int, path: str, browser: BrowserContext, available_file_paths: list[str]):
+        async def upload_file(
+            index: int,
+            path: str,
+            browser: BrowserContext,
+            available_file_paths: list[str],
+        ):
             if path not in available_file_paths:
-                return ActionResult(error=f'File path {path} is not available')
+                return ActionResult(error=f"File path {path} is not available")
 
             if not os.path.exists(path):
-                return ActionResult(error=f'File {path} does not exist')
+                return ActionResult(error=f"File {path} does not exist")
 
             dom_el = await browser.get_dom_element_by_index(index)
 
             file_upload_dom_el = dom_el.get_file_upload_element()
 
             if file_upload_dom_el is None:
-                msg = f'No file upload element found at index {index}'
+                msg = f"No file upload element found at index {index}"
                 logger.info(msg)
                 return ActionResult(error=msg)
 
             file_upload_el = await browser.get_locate_element(file_upload_dom_el)
 
             if file_upload_el is None:
-                msg = f'No file upload element found at index {index}'
+                msg = f"No file upload element found at index {index}"
                 logger.info(msg)
                 return ActionResult(error=msg)
 
             try:
                 await file_upload_el.set_input_files(path)
-                msg = f'Successfully uploaded file to index {index}'
+                msg = f"Successfully uploaded file to index {index}"
                 logger.info(msg)
                 return ActionResult(extracted_content=msg, include_in_memory=True)
             except Exception as e:
-                msg = f'Failed to upload file to index {index}: {str(e)}'
+                msg = f"Failed to upload file to index {index}: {str(e)}"
                 logger.info(msg)
                 return ActionResult(error=msg)
 
-    @time_execution_sync('--act')
+    @time_execution_sync("--act")
     async def act(
-            self,
-            action: ActionModel,
-            browser_context: Optional[BrowserContext] = None,
-            #
-            page_extraction_llm: Optional[BaseChatModel] = None,
-            sensitive_data: Optional[Dict[str, str]] = None,
-            available_file_paths: Optional[list[str]] = None,
-            #
-            context: Context | None = None,
+        self,
+        action: ActionModel,
+        browser_context: Optional[BrowserContext] = None,
+        #
+        page_extraction_llm: Optional[BaseChatModel] = None,
+        sensitive_data: Optional[Dict[str, str]] = None,
+        available_file_paths: Optional[list[str]] = None,
+        #
+        context: Context | None = None,
     ) -> ActionResult:
         """Execute an action"""
 
         try:
             for action_name, params in action.model_dump(exclude_unset=True).items():
                 if params is not None:
+                    # Inject sensitive data back into params before execution
+                    if sensitive_data:
+                        for key, value in params.items():
+                            if isinstance(value, str):
+                                for secret_key, secret_val in sensitive_data.items():
+                                    if secret_key in value:
+                                        # Handle both <secret>SECRET_0</secret> and SECRET_0
+                                        value = value.replace(
+                                            f"<secret>{secret_key}</secret>", secret_val
+                                        )
+                                        value = value.replace(secret_key, secret_val)
+                                        params[key] = value
+
                     if action_name.startswith("mcp"):
                         # this is a mcp tool
                         logger.debug(f"Invoke MCP tool: {action_name}")
-                        mcp_tool = self.registry.registry.actions.get(action_name).function
+                        mcp_tool = self.registry.registry.actions.get(
+                            action_name
+                        ).function
                         result = await mcp_tool.ainvoke(params)
                     else:
                         result = await self.registry.execute_action(
@@ -146,12 +156,16 @@ class CustomController(Controller):
                     elif result is None:
                         return ActionResult()
                     else:
-                        raise ValueError(f'Invalid action result type: {type(result)} of {result}')
+                        raise ValueError(
+                            f"Invalid action result type: {type(result)} of {result}"
+                        )
             return ActionResult()
         except Exception as e:
             raise e
 
-    async def setup_mcp_client(self, mcp_server_config: Optional[Dict[str, Any]] = None):
+    async def setup_mcp_client(
+        self, mcp_server_config: Optional[Dict[str, Any]] = None
+    ):
         self.mcp_server_config = mcp_server_config
         if self.mcp_server_config:
             self.mcp_client = await setup_mcp_client_and_tools(self.mcp_server_config)
@@ -173,9 +187,10 @@ class CustomController(Controller):
                     )
                     logger.info(f"Add mcp tool: {tool_name}")
                 logger.debug(
-                    f"Registered {len(self.mcp_client.server_name_to_tools[server_name])} mcp tools for {server_name}")
+                    f"Registered {len(self.mcp_client.server_name_to_tools[server_name])} mcp tools for {server_name}"
+                )
         else:
-            logger.warning(f"MCP client not started.")
+            logger.warning("MCP client not started.")
 
     async def close_mcp_client(self):
         if self.mcp_client:

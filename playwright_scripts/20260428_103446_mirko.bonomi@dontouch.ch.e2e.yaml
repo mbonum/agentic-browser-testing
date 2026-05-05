@@ -1,0 +1,11 @@
+version: '1.0'
+name: Generated E2E Test
+description: Auto-generated from browser-use agent session
+config:
+  browser: chromium
+  headless: false
+  viewport:
+    width: 1920
+    height: 1080
+variables: {}
+steps: []

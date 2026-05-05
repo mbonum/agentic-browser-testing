@@ -1,0 +1,37 @@
+scenario: Login & Logout Flow
+app: app
+domain: main
+type: e2e
+priority: P0
+setup:
+  environment:
+  - SECRET_0
+  baseURL: https://lc-my.escort-advisor.com
+  browser:
+  - chromium
+pages:
+- name: MainPage
+  path: ./pages/mainpage.page.ts
+  selectors:
+    profileButton: locator("xpath=//html/body/app-root/ion-app/div/div/ion-router-outlet/ng-component/ion-header/my-main-header/ion-toolbar/my-profile-profile-select/my-ui-button-group/ion-button[2]")
+    logoutButton: locator("xpath=//html/body/app-root/ion-app/ion-popover/div/ion-content/ion-list/ion-item[2]/ion-label")
+tests:
+- name: Login & Logout Flow
+  priority: P0
+  steps:
+  - action: navigate
+    route: /
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 700)');
+  - action: click
+    selector: profileButton
+  - action: click
+    selector: logoutButton
+metadata:
+  author: Browser-Use Agent
+  created: '2026-04-28'
+  tags:
+  - e2e
+  - generated
+  - main
+  jira: AUTO-GENERATED

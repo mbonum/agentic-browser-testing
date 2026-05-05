@@ -101,19 +101,20 @@ def generate_qa_report(test_id):
     # Read test JSON for data
     base_dir = Path("tmp/agent_history").absolute() / test_id
     json_file = base_dir / f"{test_id}.json"
-    
+
     status = "✅ Passed"
     error_msg = ""
+    history = []
     if json_file.exists():
         try:
             with open(json_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
             history = data.get("history", [])
             if history:
-                last_step = history[-1]
-                model_output = last_step.get("model_output", {})
-                current_state = model_output.get("current_state", {})
-                evaluation = current_state.get("evaluation_previous_goal", "")
+                last_step = history[-1] or {}
+                model_output = last_step.get("model_output") or {}
+                current_state = model_output.get("current_state") or {}
+                evaluation = current_state.get("evaluation_previous_goal") or ""
                 if "fail" in evaluation.lower() or "error" in evaluation.lower():
                     status = "❌ Failed"
                     error_msg = evaluation
@@ -126,7 +127,10 @@ def generate_qa_report(test_id):
     
     if history:
         # Check first step memory for URL
-        first_memory = history[0].get("model_output", {}).get("current_state", {}).get("memory", "")
+        first_step = history[0] or {}
+        first_model_output = first_step.get("model_output") or {}
+        first_current_state = first_model_output.get("current_state") or {}
+        first_memory = first_current_state.get("memory") or ""
         import re
         url_match = re.search(r'https?://([^/.]+)\.', first_memory)
         if url_match:
@@ -134,7 +138,10 @@ def generate_qa_report(test_id):
             
         # Try to find a release version in memory across all steps
         for step in history:
-            memory = step.get("model_output", {}).get("current_state", {}).get("memory", "")
+            step_data = step or {}
+            model_output = step_data.get("model_output") or {}
+            current_state = model_output.get("current_state") or {}
+            memory = current_state.get("memory") or ""
             version_match = re.search(r'(?i)(?:release\s*version|version|v)[\s:-]*([0-9]+\.[0-9]+(?:\.[0-9]+)?)', memory)
             if version_match:
                 release_version = version_match.group(1)

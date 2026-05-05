@@ -123,7 +123,7 @@ def _get_config_value(
         return default
 
 
-def _format_agent_output(model_output: AgentOutput) -> str:
+def _format_agent_output(model_output: AgentOutput, secrets: list = None) -> str:
     """Formats AgentOutput for display in the chatbot using JSON."""
     content = ""
     if model_output:
@@ -140,6 +140,13 @@ def _format_agent_output(model_output: AgentOutput) -> str:
             }
             # Dump to JSON string with indentation
             json_string = json.dumps(model_output_dump, indent=4, ensure_ascii=False)
+
+            # Scrub secrets from JSON output
+            if secrets:
+                for secret in secrets:
+                    if secret:  # Only replace non-empty secrets
+                        json_string = json_string.replace(secret, "******")
+
             # Wrap in <pre><code> for proper display in HTML
             content = f"<pre><code class='language-json'>{json_string}</code></pre>"
 
@@ -175,6 +182,9 @@ async def _handle_new_step(
     step_num -= 1
     logger.info(f"Step {step_num} completed.")
 
+    # Get secrets list for scrubbing
+    secrets = getattr(webui_manager, "bu_current_secrets", [])
+
     # --- Screenshot Handling ---
     screenshot_html = ""
     # Ensure state.screenshot exists and is not empty before proceeding
@@ -207,12 +217,18 @@ async def _handle_new_step(
         logger.debug(f"No screenshot available for step {step_num}.")
 
     # --- Format Agent Output ---
-    formatted_output = _format_agent_output(output)  # Use the updated function
+    formatted_output = _format_agent_output(output, secrets)  # Use the updated function with secrets
 
     # --- Combine and Append to Chat ---
     step_header = f"--- **Step {step_num}** ---"
     # Combine header, image (with line break), and JSON block
     final_content = step_header + "<br/>" + screenshot_html + formatted_output
+
+    # Scrub secrets from the final content (including screenshot alt text, etc.)
+    if secrets:
+        for secret in secrets:
+            if secret:
+                final_content = final_content.replace(secret, "******")
 
     chat_message = {
         "role": "assistant",
@@ -244,6 +260,13 @@ def _handle_done(webui_manager: WebuiManager, history: AgentHistoryList):
     else:
         final_summary += "- Status: Success\n"
 
+    # Scrub secrets from final summary
+    secrets = getattr(webui_manager, "bu_current_secrets", [])
+    if secrets:
+        for secret in secrets:
+            if secret:
+                final_summary = final_summary.replace(secret, "******")
+
     webui_manager.bu_chat_history.append(
         {"role": "assistant", "content": final_summary}
     )
@@ -259,10 +282,18 @@ async def _ask_assistant_callback(
         logger.error("Chat history not found in webui_manager during ask_assistant!")
         return {"response": "Internal Error: Cannot display help request."}
 
+    # Scrub secrets from query before displaying
+    scrubbed_query = query
+    secrets = getattr(webui_manager, "bu_current_secrets", [])
+    if secrets:
+        for secret in secrets:
+            if secret:
+                scrubbed_query = scrubbed_query.replace(secret, "******")
+
     webui_manager.bu_chat_history.append(
         {
             "role": "assistant",
-            "content": f"**Need Help:** {query}\nPlease provide information or perform the required action in the browser, then type your response/confirmation below and click 'Submit Response'.",
+            "content": f"**Need Help:** {scrubbed_query}\nPlease provide information or perform the required action in the browser, then type your response/confirmation below and click 'Submit Response'.",
         }
     )
 
@@ -347,6 +378,9 @@ async def run_agent_task(
     # Set running state indirectly via _current_task
     webui_manager.bu_chat_history.append({"role": "user", "content": display_task})
 
+    # Track resolved secrets for scrubbing
+    resolved_secrets = []
+
     # Now resolve the actual values for the agent
     def env_replacer(match):
         var_name = match.group(1).strip()
@@ -354,10 +388,14 @@ async def run_agent_task(
             var_name = "PASSWORD"
         val = os.getenv(var_name)
         if val is not None:
+            resolved_secrets.append(val)  # Track the actual secret value
             return val
         return match.group(0)
 
     task = re.sub(r'<get\s+(.*?)\s+from\s+\.env>', env_replacer, task, flags=re.IGNORECASE)
+
+    # Store secrets in webui_manager for access in callbacks
+    webui_manager.bu_current_secrets = resolved_secrets
 
     yield {
         user_input_comp: gr.update(
@@ -530,6 +568,7 @@ async def run_agent_task(
                     new_context_config=BrowserContextConfig(
                         window_width=window_w,
                         window_height=window_h,
+                        allowed_domains=["*"] if resolved_secrets else None,
                     )
                 )
             )
@@ -545,6 +584,7 @@ async def run_agent_task(
                 save_downloads_path=save_download_path if save_download_path else None,
                 window_height=window_h,
                 window_width=window_w,
+                allowed_domains=["*"] if resolved_secrets else None,
             )
             if not webui_manager.bu_browser:
                 raise ValueError("Browser not initialized, cannot create context.")
@@ -570,17 +610,24 @@ async def run_agent_task(
             f"{webui_manager.bu_agent_task_id}.gif",
         )
         playwright_script_path = None
-        playwright_ts_script_path = None
+        playwright_output_path = None
         if save_playwright_script_path:
             playwright_script_path = os.path.join(
                 save_playwright_script_path,
                 f"{webui_manager.bu_agent_task_id}.py",
             )
             if playwright_script_language == "TypeScript":
-                playwright_ts_script_path = os.path.join(
+                playwright_output_path = os.path.join(
                     save_playwright_script_path,
                     f"{webui_manager.bu_agent_task_id}.spec.ts",
                 )
+            elif playwright_script_language == "YAML (Code-Agnostic)":
+                playwright_output_path = os.path.join(
+                    save_playwright_script_path,
+                    f"{webui_manager.bu_agent_task_id}.e2e.yaml",
+                )
+            else:  # Python
+                playwright_output_path = playwright_script_path
 
         # Pass the webui_manager to callbacks when wrapping them
         async def step_callback_wrapper(
@@ -597,6 +644,13 @@ async def run_agent_task(
                 raise ValueError(
                     "Browser or Context not initialized, cannot create agent."
                 )
+
+            # Prepare sensitive_data dict from resolved secrets
+            sensitive_data = {}
+            for i, secret in enumerate(resolved_secrets):
+                if secret:
+                    sensitive_data[f"SECRET_{i}"] = secret
+
             webui_manager.bu_agent = BrowserUseAgent(
                 task=task,
                 llm=main_llm,
@@ -614,11 +668,18 @@ async def run_agent_task(
                 planner_llm=planner_llm,
                 use_vision_for_planner=planner_use_vision if planner_llm else False,
                 source="webui",
+                sensitive_data=sensitive_data if sensitive_data else None,
             )
             webui_manager.bu_agent.state.agent_id = webui_manager.bu_agent_task_id
             webui_manager.bu_agent.settings.generate_gif = gif_path
             webui_manager.bu_agent.settings.save_playwright_script_path = playwright_script_path
         else:
+            # Prepare sensitive_data dict from resolved secrets
+            sensitive_data = {}
+            for i, secret in enumerate(resolved_secrets):
+                if secret:
+                    sensitive_data[f"SECRET_{i}"] = secret
+
             webui_manager.bu_agent.state.agent_id = webui_manager.bu_agent_task_id
             webui_manager.bu_agent.add_new_task(task)
             webui_manager.bu_agent.settings.generate_gif = gif_path
@@ -626,6 +687,9 @@ async def run_agent_task(
             webui_manager.bu_agent.browser = webui_manager.bu_browser
             webui_manager.bu_agent.browser_context = webui_manager.bu_browser_context
             webui_manager.bu_agent.controller = webui_manager.bu_controller
+            # Update sensitive_data for the new task
+            if sensitive_data:
+                webui_manager.bu_agent.sensitive_data = sensitive_data
 
         # --- 6. Run Agent Task and Stream Updates ---
         agent_run_coro = webui_manager.bu_agent.run(max_steps=max_steps)
@@ -781,16 +845,22 @@ async def run_agent_task(
 
             if playwright_script_path and os.path.exists(playwright_script_path):
                 logger.info(f"Playwright Python script found at: {playwright_script_path}")
-                # Convert Python script to TypeScript
-                if playwright_ts_script_path:
+                # Convert based on selected language
+                if playwright_output_path and playwright_output_path != playwright_script_path:
                     try:
-                        from src.utils.playwright_script_converter import python_to_typescript_playwright
-                        python_to_typescript_playwright(playwright_script_path, playwright_ts_script_path)
-                        logger.info(f"Converted to TypeScript: {playwright_ts_script_path}")
-                        # Return TypeScript file instead of Python
-                        final_update[playwright_script_comp] = gr.File(value=playwright_ts_script_path)
+                        if playwright_script_language == "TypeScript":
+                            from src.utils.playwright_script_converter import python_to_typescript_playwright
+                            python_to_typescript_playwright(playwright_script_path, playwright_output_path)
+                            logger.info(f"Converted to TypeScript: {playwright_output_path}")
+                        elif playwright_script_language == "YAML (Code-Agnostic)":
+                            # Use browser-use specific YAML generator
+                            from src.utils.browser_use_yaml_generator import browser_use_to_rich_yaml
+                            browser_use_to_rich_yaml(playwright_script_path, playwright_output_path)
+                            logger.info(f"Converted to YAML: {playwright_output_path}")
+
+                        final_update[playwright_script_comp] = gr.File(value=playwright_output_path)
                     except Exception as e:
-                        logger.error(f"Failed to convert to TypeScript: {e}")
+                        logger.error(f"Failed to convert to {playwright_script_language}: {e}")
                         # Fallback to Python script
                         final_update[playwright_script_comp] = gr.File(value=playwright_script_path)
                 else:
@@ -816,6 +886,14 @@ async def run_agent_task(
             error_message = (
                 f"**Agent Execution Error:**\n```\n{type(e).__name__}: {e}\n```"
             )
+
+            # Scrub secrets from error message
+            secrets = getattr(webui_manager, "bu_current_secrets", [])
+            if secrets:
+                for secret in secrets:
+                    if secret:
+                        error_message = error_message.replace(secret, "******")
+
             if not any(
                     error_message in msg.get("content", "")
                     for msg in webui_manager.bu_chat_history
@@ -825,7 +903,14 @@ async def run_agent_task(
                     {"role": "assistant", "content": error_message}
                 )
             final_update[chatbot_comp] = gr.update(value=webui_manager.bu_chat_history)
-            gr.Error(f"Agent execution failed: {e}")
+
+            # Scrub secret from error display
+            scrubbed_error = str(e)
+            if secrets:
+                for secret in secrets:
+                    if secret:
+                        scrubbed_error = scrubbed_error.replace(secret, "******")
+            gr.Error(f"Agent execution failed: {scrubbed_error}")
 
         finally:
             webui_manager.bu_current_task = None  # Clear the task reference
@@ -864,6 +949,15 @@ async def run_agent_task(
         # Catch errors during setup (before agent run starts)
         logger.error(f"Error setting up agent task: {e}", exc_info=True)
         webui_manager.bu_current_task = None  # Ensure state is reset
+
+        # Scrub secrets from error message
+        error_content = f"**Setup Error:** {e}"
+        secrets = getattr(webui_manager, "bu_current_secrets", [])
+        if secrets:
+            for secret in secrets:
+                if secret:
+                    error_content = error_content.replace(secret, "******")
+
         yield {
             user_input_comp: gr.update(
                 interactive=True, placeholder="Error during setup. Enter task..."
@@ -874,7 +968,7 @@ async def run_agent_task(
             clear_button_comp: gr.update(interactive=True),
             chatbot_comp: gr.update(
                 value=webui_manager.bu_chat_history
-                      + [{"role": "assistant", "content": f"**Setup Error:** {e}"}]
+                      + [{"role": "assistant", "content": error_content}]
             ),
         }
 
@@ -1020,6 +1114,7 @@ async def handle_clear(webui_manager: WebuiManager):
     webui_manager.bu_response_event = None
     webui_manager.bu_user_help_response = None
     webui_manager.bu_agent_task_id = None
+    webui_manager.bu_current_secrets = []  # Clear secrets
 
     logger.info("Agent state and browser resources cleared.")
 

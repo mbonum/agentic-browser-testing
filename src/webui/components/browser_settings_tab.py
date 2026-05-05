@@ -146,9 +146,9 @@ def create_browser_settings_tab(webui_manager: WebuiManager):
             )
             playwright_script_language = gr.Dropdown(
                 label="Script Language",
-                choices=["TypeScript", "Python"],
-                value="TypeScript",
-                info="Language for generated Playwright scripts",
+                choices=["YAML (Code-Agnostic)", "TypeScript", "Python"],
+                value="YAML (Code-Agnostic)",
+                info="Output format: YAML = language-agnostic, convertible to any language",
                 interactive=True,
             )
     tab_components.update(

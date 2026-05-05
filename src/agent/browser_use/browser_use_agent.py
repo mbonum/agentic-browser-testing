@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import copy
 import logging
 import os
 
@@ -18,6 +19,7 @@ from browser_use.browser.views import BrowserStateHistory
 from browser_use.utils import time_execution_async
 from dotenv import load_dotenv
 from browser_use.agent.message_manager.utils import is_model_without_tool_support
+from src.utils.secret_scrubber import scrub_history
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -166,4 +168,24 @@ class BrowserUseAgent(Agent):
                 if isinstance(self.settings.generate_gif, str):
                     output_path = self.settings.generate_gif
 
-                create_history_gif(task=self.task, history=self.state.history, output_path=output_path)
+                # Scrub sensitive data from task and history before creating GIF
+                scrubbed_task = self.task
+                secrets_list = []
+
+                if self.sensitive_data:
+                    for secret_value in self.sensitive_data.values():
+                        if secret_value:
+                            scrubbed_task = scrubbed_task.replace(secret_value, "******")
+                            secrets_list.append(secret_value)
+
+                # Deep copy and scrub history
+                scrubbed_history = copy.deepcopy(self.state.history)
+                if secrets_list:
+                    scrub_history(scrubbed_history, secrets_list)
+                    logger.info(f"Scrubbed {len(secrets_list)} secrets from GIF history")
+                    logger.warning(
+                        "Note: Screenshots in GIF may still show secrets if they were visible on screen. "
+                        "For complete security with passwords, disable GIF generation."
+                    )
+
+                create_history_gif(task=scrubbed_task, history=scrubbed_history, output_path=output_path)
