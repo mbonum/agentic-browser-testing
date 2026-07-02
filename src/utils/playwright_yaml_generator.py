@@ -31,7 +31,7 @@ def python_playwright_to_yaml(python_script_path: str, output_path: str = None) 
         'config': {
             'browser': 'chromium',
             'headless': False,
-            'viewport': {'width': 1920, 'height': 1080}
+            'viewport': {'width': 375, 'height': 812}
         },
         'variables': {},
         'steps': []
@@ -326,7 +326,7 @@ def yaml_to_playwright_python(yaml_path: str, output_path: str = None) -> str:
         "def main():",
         "    with sync_playwright() as p:",
         f"        browser = p.chromium.launch(headless={test_def['config'].get('headless', False)})",
-        f"        context = browser.new_context(viewport={test_def['config'].get('viewport', {'width': 1920, 'height': 1080})})",
+        f"        context = browser.new_context(viewport={test_def['config'].get('viewport', {'width': 375, 'height': 812})})",
         "        page = context.new_page()",
         "",
     ]

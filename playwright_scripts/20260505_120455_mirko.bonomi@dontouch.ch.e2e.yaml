@@ -1,0 +1,32 @@
+scenario: Login & Logout Flow
+app: app
+domain: main
+type: e2e
+priority: P0
+setup:
+  environment:
+  - SECRET_0
+  baseURL: http://localhost:8888
+  browser:
+  - chromium
+pages:
+- name: MainPage
+  path: ./pages/mainpage.page.ts
+  selectors:
+    tabButton: locator("xpath=//html/body/app-root/ion-app/div/div/ion-router-outlet/ng-component/ion-footer/my-main-footer/ion-tab-bar/ion-tab-button[2]/ion-label")
+tests:
+- name: Login & Logout Flow
+  priority: P0
+  steps:
+  - action: wait
+    duration: 1000
+  - action: click
+    selector: tabButton
+metadata:
+  author: mirko.bonomi@dontouch.ch
+  created: '2026-05-05'
+  tags:
+  - e2e
+  - generated
+  - main
+  jira: AUTO-GENERATED

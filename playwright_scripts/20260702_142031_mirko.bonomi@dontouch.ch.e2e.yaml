@@ -1,0 +1,122 @@
+scenario: Login & Logout Flow
+app: app
+domain: main
+type: e2e
+priority: P0
+setup:
+  environment: []
+  baseURL: http://localhost:8888
+  browser:
+  - chromium
+pages:
+- name: MainPage
+  path: ./pages/mainpage.page.ts
+  selectors:
+    phoneInput: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/ion-content/div[2]/div/div[4]/div/pwa-searchbar/div/ion-searchbar/div/input")
+    profileButton: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/ion-content/div[2]/div/div[4]/div/pwa-searchbar/div/div")
+    profileButton1: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/ion-content/div[2]/div/div[4]/div/pwa-searchbar/div/div")
+    profileButton2: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/ion-content/div[2]/div/div[4]/div/pwa-profiles-list/div[2]/div[2]/div[3]")
+    phoneInput1: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/ion-content/div[2]/div/div[6]/div/pwa-searchbar/div/ion-searchbar/div/input")
+    profileButton3: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/ion-content/div[2]/div/div[6]/div/pwa-searchbar/div/div")
+    profileButton4: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/ion-content/div[2]/div/div[6]/div/pwa-searchbar/div/div")
+    profileButton5: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/ion-content/div[2]/div/div[6]/div/pwa-profiles-list/div[2]/div[2]/div[3]")
+    profileButton6: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/pwa-detail-footer/ion-footer/div/div[1]")
+    DivLink: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[2]/div/pwa-migration-create/ion-content/pwa-migration-form/div[2]/div/div[29]/div[2]/div")
+    IonToggleLink: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[2]/div/pwa-migration-otp/ion-content/div[2]/div[1]/div[7]/pwa-migration-otp-form/div/div/div[1]/ion-toggle")
+    IonToggleLink1: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[2]/div/pwa-migration-otp/ion-content/div[2]/div[1]/div[9]/pwa-migration-otp-form/div/div/div[1]/ion-toggle")
+    IonToggleLink2: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[2]/div/pwa-migration-otp/ion-content/div[2]/div[1]/div[7]/pwa-migration-otp-form/div/div/div/ion-toggle")
+    IonToggleLink3: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[2]/div/pwa-migration-otp/ion-content/div[2]/div[1]/div[9]/pwa-migration-otp-form/div/div/div[1]/ion-toggle")
+tests:
+- name: Login & Logout Flow
+  priority: P0
+  steps:
+  - action: wait
+    duration: 1000
+  - action: input
+    selector: phoneInput
+    value: $E2E_PHONE_NUMBER
+  - action: click
+    selector: profileButton
+  - action: click
+    selector: profileButton1
+  - action: click
+    selector: profileButton2
+  - action: input
+    selector: phoneInput1
+    value: '3509986236'
+  - action: click
+    selector: profileButton3
+  - action: click
+    selector: profileButton4
+  - action: click
+    selector: profileButton5
+  - action: click
+    selector: profileButton6
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 500)');
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 800)');
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 400)');
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, -400)');
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, -600)');
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 300)');
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 200)');
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 200)');
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 150)');
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 300)');
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, -200)');
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 200)');
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 100)');
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 300)');
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 100)');
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 200)');
+  - action: click
+    selector: DivLink
+  - action: click
+    selector: IonToggleLink
+  - action: click
+    selector: IonToggleLink1
+  - action: click
+    selector: IonToggleLink2
+  - action: click
+    selector: IonToggleLink3
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 300)');
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 300)');
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 300)');
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 300)');
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 400)');
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 200)');
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, -1000)');
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, -1000)');
+  - action: custom
+    code: await page.evaluate('window.scrollBy(0, 500)');
+metadata:
+  author: mirko.bonomi@dontouch.ch
+  created: '2026-07-02'
+  tags:
+  - e2e
+  - generated
+  - main
+  jira: AUTO-GENERATED

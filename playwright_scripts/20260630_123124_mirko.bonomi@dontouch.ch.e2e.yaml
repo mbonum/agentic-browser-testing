@@ -1,0 +1,54 @@
+scenario: Login & Logout Flow
+app: app
+domain: main
+type: e2e
+priority: P0
+setup:
+  environment: []
+  baseURL: http://localhost:8888
+  browser:
+  - chromium
+pages:
+- name: MainPage
+  path: ./pages/mainpage.page.ts
+  selectors:
+    passwordInput: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/ion-content/div[2]/div/div[4]/div/pwa-searchbar/div/ion-searchbar/div/input")
+    profileButton: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/ion-content/div[2]/div/div[4]/div/pwa-searchbar/div/div")
+    profileButton1: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/ion-content/div[2]/div/div[4]/div/pwa-searchbar/div/div")
+    profileButton2: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/ion-content/div[2]/div/div[4]/div/pwa-profiles-list/div[2]/div[2]/div[3]")
+    passwordInput1: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/ion-content/div[2]/div/div[6]/div/pwa-searchbar/div/ion-searchbar/div/input")
+    profileButton3: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/ion-content/div[2]/div/div[6]/div/pwa-searchbar/div/div")
+    profileButton4: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/ion-content/div[2]/div/div[6]/div/pwa-profiles-list/div[2]/div[2]/div[3]")
+    profileButton5: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/pwa-detail-footer/ion-footer/div/div[1]")
+tests:
+- name: Login & Logout Flow
+  priority: P0
+  steps:
+  - action: wait
+    duration: 1000
+  - action: input
+    selector: passwordInput
+    value: $PSW_CLIENT
+  - action: click
+    selector: profileButton
+  - action: click
+    selector: profileButton1
+  - action: click
+    selector: profileButton2
+  - action: input
+    selector: passwordInput1
+    value: '641816952'
+  - action: click
+    selector: profileButton3
+  - action: click
+    selector: profileButton4
+  - action: click
+    selector: profileButton5
+metadata:
+  author: mirko.bonomi@dontouch.ch
+  created: '2026-06-30'
+  tags:
+  - e2e
+  - generated
+  - main
+  jira: AUTO-GENERATED

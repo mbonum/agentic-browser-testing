@@ -1,0 +1,24 @@
+scenario: Login & Logout Flow
+app: app
+domain: main
+type: e2e
+priority: P0
+setup:
+  environment:
+  - SECRET_0
+  baseURL: http://localhost:8888
+  browser:
+  - chromium
+pages: []
+tests:
+- name: Login & Logout Flow
+  priority: P0
+  steps: []
+metadata:
+  author: mirko.bonomi@dontouch.ch
+  created: '2026-05-05'
+  tags:
+  - e2e
+  - generated
+  - main
+  jira: AUTO-GENERATED

@@ -270,7 +270,7 @@ def browser_use_to_rich_yaml(python_script_path: str, output_path: str = None,
             'version': '1.0',
             'name': 'Generated E2E Test',
             'description': 'Auto-generated from browser-use agent session',
-            'config': {'browser': 'chromium', 'headless': False, 'viewport': {'width': 1920, 'height': 1080}},
+            'config': {'browser': 'chromium', 'headless': False, 'viewport': {'width': 375, 'height': 812}},
             'variables': {},
             'steps': []
         }

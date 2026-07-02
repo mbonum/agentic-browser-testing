@@ -1,44 +1,44 @@
 from openai import OpenAI
-import pdb
+# import pdb
 from langchain_openai import ChatOpenAI
-from langchain_core.globals import get_llm_cache
+# from langchain_core.globals import get_llm_cache
 from langchain_core.language_models.base import (
-    BaseLanguageModel,
-    LangSmithParams,
+    # BaseLanguageModel,
+    # LangSmithParams,
     LanguageModelInput,
 )
 import os
-from langchain_core.load import dumpd, dumps
+# from langchain_core.load import dumpd, dumps
 from langchain_core.messages import (
     AIMessage,
     SystemMessage,
-    AnyMessage,
-    BaseMessage,
-    BaseMessageChunk,
-    HumanMessage,
+    # AnyMessage,
+    # BaseMessage,
+    # BaseMessageChunk,
+    # HumanMessage,
     convert_to_messages,
-    message_chunk_to_message,
+    # message_chunk_to_message,
 )
-from langchain_core.outputs import (
-    ChatGeneration,
-    ChatGenerationChunk,
-    ChatResult,
-    LLMResult,
-    RunInfo,
-)
+# from langchain_core.outputs import (
+#     ChatGeneration,
+#     ChatGenerationChunk,
+#     ChatResult,
+#     LLMResult,
+#     RunInfo,
+# )
 from langchain_ollama import ChatOllama
-from langchain_core.output_parsers.base import OutputParserLike
-from langchain_core.runnables import Runnable, RunnableConfig
-from langchain_core.tools import BaseTool
+# from langchain_core.output_parsers.base import OutputParserLike
+from langchain_core.runnables import RunnableConfig # Runnable,
+# from langchain_core.tools import BaseTool
 
 from typing import (
-    TYPE_CHECKING,
+    # TYPE_CHECKING,
     Any,
-    Callable,
-    Literal,
+    # Callable,
+    # Literal,
     Optional,
-    Union,
-    cast, List,
+    # Union,
+    # cast, List,
 )
 from langchain_anthropic import ChatAnthropic
 from langchain_mistralai import ChatMistralAI
@@ -47,11 +47,11 @@ from langchain_google_genai import (
     HarmBlockThreshold,
     HarmCategory,
 )
-from langchain_ollama import ChatOllama
+# from langchain_ollama import ChatOllama
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from langchain_ibm import ChatWatsonx
-from langchain_aws import ChatBedrock
-from pydantic import SecretStr
+# from langchain_aws import ChatBedrock
+# from pydantic import SecretStr
 
 from src.utils import config
 
@@ -210,7 +210,7 @@ def get_llm_model(provider: str, **kwargs):
             base_url = kwargs.get("base_url")
 
         return ChatOpenAI(
-            model=kwargs.get("model_name", "gpt-5.4"),  # gpt-4o
+            model=kwargs.get("model_name", "gpt-5.5"),  # gpt-5.4 gpt-4o
             temperature=kwargs.get("temperature", 0.0),
             base_url=base_url,
             api_key=api_key,
@@ -249,7 +249,7 @@ def get_llm_model(provider: str, **kwargs):
             )
     elif provider == "google":
         return ChatGoogleGenerativeAI(
-            model=kwargs.get("model_name", "gemini-3.1-flash-lite-preview"),  # gemini-3.1-pro-preview
+            model=kwargs.get("model_name", "gemini-3.5-flash"),  # gemini-3.1-pro-preview
             safety_settings={
                 HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE
             },

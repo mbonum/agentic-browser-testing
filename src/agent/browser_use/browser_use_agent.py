@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import json
 import logging
 import os
+import time
+from pathlib import Path
 
 # from lmnr.sdk.decorators import observe
 from browser_use.agent.gif import create_history_gif
@@ -30,6 +33,103 @@ SKIP_LLM_API_KEY_VERIFICATION = (
 
 
 class BrowserUseAgent(Agent):
+    async def multi_act(self, *args, **kwargs) -> list[ActionResult]:
+        start_time = time.perf_counter()
+        try:
+            return await super().multi_act(*args, **kwargs)
+        finally:
+            self._last_browser_action_duration_ms = (time.perf_counter() - start_time) * 1000
+
+    async def _capture_latest_page_load_timing(self) -> None:
+        history = self.state.history.history
+        if not history:
+            return
+
+        latest_history_index = len(history) - 1
+        if not hasattr(self, "_page_load_timings_by_history_index"):
+            self._page_load_timings_by_history_index = {}
+            self._browser_action_durations_by_history_index = {}
+            self._last_navigation_timing_signature = None
+
+        action_duration_ms = getattr(self, "_last_browser_action_duration_ms", None)
+        if (
+            action_duration_ms is not None
+            and latest_history_index not in self._browser_action_durations_by_history_index
+        ):
+            self._browser_action_durations_by_history_index[latest_history_index] = action_duration_ms
+
+        if latest_history_index in self._page_load_timings_by_history_index:
+            return
+
+        page = getattr(self.browser_context, "agent_current_page", None)
+        if not page:
+            return
+
+        try:
+            timing = await page.evaluate(
+                """() => {
+                    const navigation = performance.getEntriesByType('navigation')[0];
+                    if (!navigation) return null;
+
+                    return {
+                        url: navigation.name,
+                        type: navigation.type,
+                        startTime: navigation.startTime,
+                        durationMs: navigation.duration,
+                        domContentLoadedMs: navigation.domContentLoadedEventEnd,
+                        loadEventEndMs: navigation.loadEventEnd,
+                        responseStartMs: navigation.responseStart,
+                        responseEndMs: navigation.responseEnd
+                    };
+                }"""
+            )
+        except Exception as exc:
+            logger.debug(f"Failed to capture page load timing: {exc}")
+            return
+
+        if not timing:
+            return
+
+        signature = (
+            timing.get("url"),
+            timing.get("type"),
+            timing.get("startTime"),
+            timing.get("responseEndMs"),
+            timing.get("loadEventEndMs"),
+        )
+        timing["isNewNavigation"] = signature != self._last_navigation_timing_signature
+        self._last_navigation_timing_signature = signature
+        self._page_load_timings_by_history_index[latest_history_index] = timing
+
+    def save_history(self, file_path: str | Path | None = None) -> None:
+        """Save history and include browser page-load timing captured during the run."""
+        if not file_path:
+            file_path = "AgentHistory.json"
+
+        data = self.state.history.model_dump()
+        page_load_timings = getattr(self, "_page_load_timings_by_history_index", {})
+        browser_action_durations = getattr(self, "_browser_action_durations_by_history_index", {})
+        for index, timing in page_load_timings.items():
+            if index >= len(data["history"]):
+                continue
+
+            metadata = data["history"][index].get("metadata") or {}
+            metadata["page_load_timing"] = timing
+            data["history"][index]["metadata"] = metadata
+
+        for index, duration_ms in browser_action_durations.items():
+            if index >= len(data["history"]):
+                continue
+
+            metadata = data["history"][index].get("metadata") or {}
+            metadata["browser_action_duration_ms"] = duration_ms
+            data["history"][index]["metadata"] = metadata
+
+        path = Path(file_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+
     def _set_tool_calling_method(self) -> ToolCallingMethod | None:
         tool_calling_method = self.settings.tool_calling_method
         if tool_calling_method == 'auto':
@@ -101,6 +201,7 @@ class BrowserUseAgent(Agent):
 
                 step_info = AgentStepInfo(step_number=step, max_steps=max_steps)
                 await self.step(step_info)
+                await self._capture_latest_page_load_timing()
 
                 if on_step_end is not None:
                     await on_step_end(self)

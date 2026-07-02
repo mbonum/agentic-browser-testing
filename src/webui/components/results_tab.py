@@ -52,9 +52,9 @@ def load_test_details(test_id):
                 
             history = data.get("history", [])
             if history:
-                last_step = history[-1]
-                model_output = last_step.get("model_output", {})
-                current_state = model_output.get("current_state", {})
+                last_step = history[-1] or {}
+                model_output = last_step.get("model_output") or {}
+                current_state = model_output.get("current_state") or {}
                 
                 result_text += "**Final State Evaluation:**\n"
                 result_text += f"{current_state.get('evaluation_previous_goal', 'N/A')}\n\n"
@@ -72,8 +72,9 @@ def load_test_details(test_id):
                     memory_text = memory_text.strip()
                 result_text += f"{memory_text}\n\n"
                 
-                actions = model_output.get("action", [])
+                actions = model_output.get("action") or []
                 for action in actions:
+                    action = action or {}
                     if "done" in action:
                         result_text += "**Final Output:**\n"
                         result_text += f"{action['done'].get('text', 'N/A')}\n"
@@ -85,6 +86,57 @@ def load_test_details(test_id):
     gif_path = str(gif_file) if gif_file.exists() else None
     
     return result_text, gif_path
+
+def _format_step_duration(step):
+    metadata = step.get("metadata") or {}
+    start_time = metadata.get("step_start_time")
+    end_time = metadata.get("step_end_time")
+
+    if start_time is None or end_time is None:
+        return "N/A"
+
+    try:
+        duration_seconds = max(0.0, float(end_time) - float(start_time))
+    except (TypeError, ValueError):
+        return "N/A"
+
+    duration_milliseconds = round(duration_seconds * 1000)
+    return f"{duration_seconds:.3f}s ({duration_milliseconds} ms)"
+
+def _format_page_load_timing(step):
+    metadata = step.get("metadata") or {}
+    timing = metadata.get("page_load_timing") or {}
+
+    if not timing:
+        return "N/A"
+
+    if timing.get("isNewNavigation") is False:
+        return "N/A (no full page navigation)"
+
+    duration_ms = timing.get("durationMs")
+    if duration_ms is None:
+        return "N/A"
+
+    try:
+        duration_ms = max(0.0, float(duration_ms))
+    except (TypeError, ValueError):
+        return "N/A"
+
+    return f"{duration_ms / 1000:.3f}s ({round(duration_ms)} ms)"
+
+def _format_browser_action_duration(step):
+    metadata = step.get("metadata") or {}
+    duration_ms = metadata.get("browser_action_duration_ms")
+
+    if duration_ms is None:
+        return "N/A"
+
+    try:
+        duration_ms = max(0.0, float(duration_ms))
+    except (TypeError, ValueError):
+        return "N/A"
+
+    return f"{duration_ms / 1000:.3f}s ({round(duration_ms)} ms)"
 
 def generate_qa_report(test_id):
     if not test_id:
@@ -183,7 +235,8 @@ def generate_qa_report(test_id):
         
         display_step_num = 1
         for step in history:
-            state = step.get("state", {})
+            step = step or {}
+            state = step.get("state") or {}
             
             # Skip initial about:blank pages
             url = state.get("url", "")
@@ -196,10 +249,10 @@ def generate_qa_report(test_id):
                 if tabs and isinstance(tabs, list) and tabs[0].get("url") == "about:blank":
                     continue
 
-            model_output = step.get("model_output", {})
-            current_state = model_output.get("current_state", {})
-            evaluation = current_state.get("evaluation_previous_goal", "")
-            next_goal = current_state.get("next_goal", "")
+            model_output = step.get("model_output") or {}
+            current_state = model_output.get("current_state") or {}
+            evaluation = current_state.get("evaluation_previous_goal") or ""
+            next_goal = current_state.get("next_goal") or ""
             
             is_fail = "fail" in evaluation.lower() or "error" in evaluation.lower()
             
@@ -209,11 +262,19 @@ def generate_qa_report(test_id):
                 # Embed the base64 screenshot directly in the markdown
                 img_markdown = f"  ![Evidence](data:image/png;base64,{screenshot_b64})\n"
                 
+            step_duration = _format_step_duration(step)
+            page_load_timing = _format_page_load_timing(step)
+            browser_action_duration = _format_browser_action_duration(step)
             step_md = f"#### Step {display_step_num}: {next_goal or 'Execution'}\n"
             step_md += f"- Status: {'Failed' if is_fail else 'Passed'}\n"
             step_md += f"- Details: {evaluation}\n"
+            step_md += f"- Duration: {step_duration}\n"
+            if browser_action_duration != "N/A":
+                step_md += f"- Browser Action: {browser_action_duration}\n"
+            if page_load_timing != "N/A" and page_load_timing != "N/A (no full page navigation)":
+                step_md += f"- Page Load: {page_load_timing}\n"
             if img_markdown:
-                step_md += f"- Evidence:\n{img_markdown}\n"
+                step_md += f"- Evidence:\n\n{img_markdown}\n"
             step_md += "---\n\n"
             
             if is_fail:
@@ -228,21 +289,18 @@ def generate_qa_report(test_id):
         if failed_steps:
             dynamic_content += "### ❌ Failed Test Steps\n" + "".join(failed_steps)
             
-        dynamic_content += "## 5. Defects Summary\n\n"
         if failed_steps:
+            dynamic_content += "## 5. Defects Summary\n\n"
             for i, f_step in enumerate(failed_steps):
                 dynamic_content += f"### DEF-{101+i}: Issue in step\n"
                 dynamic_content += "- Severity: High\n- Status: Open\n\n"
-        else:
-            dynamic_content += "No defects found.\n\n"
-            
-        dynamic_content += "---\n\n"
+            dynamic_content += "---\n\n"
         
         total_tests = len(passed_steps) + len(failed_steps)
         passed_tests = len(passed_steps)
         failed_tests = len(failed_steps)
         
-        report_content = report_content[:part1_end] + dynamic_content + report_content[part2_start:]
+        report_content = report_content[:part1_end] + dynamic_content
         
         # Replace the test execution summary table numbers
         report_content = report_content.replace(

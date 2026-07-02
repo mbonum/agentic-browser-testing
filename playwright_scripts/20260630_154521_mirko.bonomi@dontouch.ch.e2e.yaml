@@ -1,0 +1,81 @@
+scenario: Login & Logout Flow
+app: app
+domain: main
+type: e2e
+priority: P0
+setup:
+  environment: []
+  baseURL: http://localhost:8888
+  browser:
+  - chromium
+pages:
+- name: MainPage
+  path: ./pages/mainpage.page.ts
+  selectors:
+    passwordInput: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/ion-content/div[2]/div/div[4]/div/pwa-searchbar/div/ion-searchbar/div/input")
+    profileButton: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/ion-content/div[2]/div/div[4]/div/pwa-searchbar/div/div")
+    profileButton1: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/ion-content/div[2]/div/div[4]/div/pwa-searchbar/div/div")
+    profileButton2: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/ion-content/div[2]/div/div[4]/div/pwa-profiles-list/div[2]/div[2]/div[3]")
+    passwordInput1: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/ion-content/div[2]/div/div[6]/div/pwa-searchbar/div/ion-searchbar/div/input")
+    profileButton3: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/ion-content/div[2]/div/div[6]/div/pwa-searchbar/div/div")
+    profileButton4: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/ion-content/div[2]/div/div[6]/div/pwa-profiles-list/div[2]/div[2]/div[3]")
+    profileButton5: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[1]/div/pwa-migration-profiles-search/pwa-detail-footer/ion-footer/div/div[1]")
+    DivLink: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[2]/div/pwa-migration-create/ion-content/pwa-migration-form/div[2]/div/div[29]/div[2]/div")
+    DivLink1: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[2]/div/pwa-migration-create/ion-content/pwa-migration-form/div[2]/div/div[32]/div[2]/div")
+    DivLink2: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[2]/div/pwa-migration-create/ion-content/pwa-migration-form/div[2]/div/div[35]/div[2]/div")
+    IonIconLink: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[2]/div/pwa-migration-create/ion-content/pwa-migration-form/div[2]/div/div[43]/div/ion-accordion-group/ion-accordion/ion-item/ion-icon")
+    DivLink3: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[2]/div/pwa-migration-create/pwa-detail-footer/ion-footer/div/div[1]")
+    IonToggleLink: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[2]/div/pwa-migration-otp/ion-content/div[2]/div[1]/div[7]/pwa-migration-otp-form/div/div/div[1]/ion-toggle")
+    IonToggleLink1: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[2]/div/pwa-migration-otp/ion-content/div[2]/div[1]/div[9]/pwa-migration-otp-form/div/div/div[1]/ion-toggle")
+    IonToggleLink2: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[2]/div/pwa-migration-otp/ion-content/div[2]/div[1]/div[9]/pwa-migration-otp-form/div/div/div[1]/ion-toggle")
+    DivLink4: locator("xpath=//html/body/pwa-root/ion-app/ion-router-outlet/pwa-shell/div/div/pwa-overlay-outlet[2]/div/pwa-migration-otp/pwa-detail-footer/ion-footer/div/div[1]")
+tests:
+- name: Login & Logout Flow
+  priority: P0
+  steps:
+  - action: wait
+    duration: 1000
+  - action: input
+    selector: passwordInput
+    value: $PSW_CLIENT
+  - action: click
+    selector: profileButton
+  - action: click
+    selector: profileButton1
+  - action: click
+    selector: profileButton2
+  - action: input
+    selector: passwordInput1
+    value: '663487033'
+  - action: click
+    selector: profileButton3
+  - action: click
+    selector: profileButton4
+  - action: click
+    selector: profileButton5
+  - action: click
+    selector: DivLink
+  - action: click
+    selector: DivLink1
+  - action: click
+    selector: DivLink2
+  - action: click
+    selector: IonIconLink
+  - action: click
+    selector: DivLink3
+  - action: click
+    selector: IonToggleLink
+  - action: click
+    selector: IonToggleLink1
+  - action: click
+    selector: IonToggleLink2
+  - action: click
+    selector: DivLink4
+metadata:
+  author: mirko.bonomi@dontouch.ch
+  created: '2026-06-30'
+  tags:
+  - e2e
+  - generated
+  - main
+  jira: AUTO-GENERATED

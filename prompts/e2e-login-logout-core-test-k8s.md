@@ -2,5 +2,5 @@
 2. Login with the credentials:
     phone number`3457009173`
     password `<get PSW_CLIENT from .env>`
-3. Logout
+3. Click on the user dropdown > Logout
 4. Write for each step whether there are issues.

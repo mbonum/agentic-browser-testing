@@ -23,6 +23,7 @@ from src.agent.browser_use.browser_use_agent import BrowserUseAgent
 from src.browser.custom_browser import CustomBrowser
 from src.controller.custom_controller import CustomController
 from src.utils import llm_provider
+from src.utils.phone_number_pool import PhoneNumberPoolError, resolve_phone_placeholders
 from src.webui.webui_manager import WebuiManager
 
 logger = logging.getLogger(__name__)
@@ -372,12 +373,6 @@ async def run_agent_task(
     from dotenv import load_dotenv
     load_dotenv()
 
-    # Create a display version of the task with passwords masked as ******
-    display_task = re.sub(r'<get\s+(.*?)\s+from\s+\.env>', '******', task, flags=re.IGNORECASE)
-
-    # Set running state indirectly via _current_task
-    webui_manager.bu_chat_history.append({"role": "user", "content": display_task})
-
     # Track resolved secrets for scrubbing
     resolved_secrets = []
 
@@ -393,6 +388,25 @@ async def run_agent_task(
         return match.group(0)
 
     task = re.sub(r'<get\s+(.*?)\s+from\s+\.env>', env_replacer, task, flags=re.IGNORECASE)
+
+    try:
+        task, resolved_phone_numbers = resolve_phone_placeholders(task)
+    except PhoneNumberPoolError as e:
+        gr.Warning(str(e))
+        yield {run_button_comp: gr.update(interactive=True)}
+        return
+
+    if resolved_phone_numbers:
+        logger.info(f"Resolved phone number placeholders for: {', '.join(resolved_phone_numbers)}")
+
+    # Create a display version of the task with passwords masked as ******
+    display_task = task
+    for secret in resolved_secrets:
+        if secret:
+            display_task = display_task.replace(secret, "******")
+
+    # Set running state indirectly via _current_task
+    webui_manager.bu_chat_history.append({"role": "user", "content": display_task})
 
     # Store secrets in webui_manager for access in callbacks
     webui_manager.bu_current_secrets = resolved_secrets
@@ -477,8 +491,8 @@ async def run_agent_task(
     keep_browser_open = get_browser_setting("keep_browser_open", False)
     headless = get_browser_setting("headless", False)
     disable_security = get_browser_setting("disable_security", False)
-    window_w = int(get_browser_setting("window_w", 1280))
-    window_h = int(get_browser_setting("window_h", 1100))
+    window_w = int(get_browser_setting("window_w", 375))
+    window_h = int(get_browser_setting("window_h", 812))
     cdp_url = get_browser_setting("cdp_url") or None
     wss_url = get_browser_setting("wss_url") or None
     save_recording_path = get_browser_setting("save_recording_path") or None
@@ -828,20 +842,31 @@ async def run_agent_task(
         webui_manager.bu_agent.state.paused = False
         webui_manager.bu_agent.state.stopped = False
         final_update = {}
-        try:
-            logger.info("Agent task completing...")
-            # Await the task ensure completion and catch exceptions if not already caught
-            if not agent_task.done():
-                await agent_task  # Retrieve result/exception
-            elif agent_task.exception():  # Check if task finished with exception
-                agent_task.result()  # Raise the exception to be caught below
-            logger.info("Agent task completed processing.")
+        artifacts_saved = False
+
+        def save_run_artifacts():
+            nonlocal artifacts_saved
+            if artifacts_saved:
+                return
+            artifacts_saved = True
+
+            if not webui_manager.bu_agent:
+                return
 
             logger.info(f"Explicitly saving agent history to: {history_file}")
             webui_manager.bu_agent.save_history(history_file)
 
             if os.path.exists(history_file):
                 final_update[history_file_comp] = gr.File(value=history_file)
+
+                try:
+                    from src.webui.components.results_tab import generate_qa_report
+
+                    qa_report_path = generate_qa_report(webui_manager.bu_agent_task_id)
+                    if qa_report_path:
+                        logger.info(f"QA report generated at: {qa_report_path}")
+                except Exception as report_err:
+                    logger.error(f"Failed to generate QA report: {report_err}", exc_info=True)
 
             if playwright_script_path and os.path.exists(playwright_script_path):
                 logger.info(f"Playwright Python script found at: {playwright_script_path}")
@@ -870,8 +895,20 @@ async def run_agent_task(
                 logger.info(f"GIF found at: {gif_path}")
                 final_update[gif_comp] = gr.Image(value=gif_path)
 
+        try:
+            logger.info("Agent task completing...")
+            # Await the task ensure completion and catch exceptions if not already caught
+            if not agent_task.done():
+                await agent_task  # Retrieve result/exception
+            elif agent_task.exception():  # Check if task finished with exception
+                agent_task.result()  # Raise the exception to be caught below
+            logger.info("Agent task completed processing.")
+
+            save_run_artifacts()
+
         except asyncio.CancelledError:
             logger.info("Agent task was cancelled.")
+            save_run_artifacts()
             if not any(
                     "Cancelled" in msg.get("content", "")
                     for msg in webui_manager.bu_chat_history
@@ -883,6 +920,7 @@ async def run_agent_task(
             final_update[chatbot_comp] = gr.update(value=webui_manager.bu_chat_history)
         except Exception as e:
             logger.error(f"Error during agent execution: {e}", exc_info=True)
+            save_run_artifacts()
             error_message = (
                 f"**Agent Execution Error:**\n```\n{type(e).__name__}: {e}\n```"
             )
