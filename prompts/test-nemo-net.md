@@ -1,4 +1,4 @@
-1. Go to `https://nemo.dontouch.group/dashboard`
+1. Go to `https://st-nemo.dontouch.com/dashboard`
 2. Click on `In The Net` button
 3. Click on `Aggiungi candidato` button
 4. Test every field, especially mandatory fields, and dropdown elements
