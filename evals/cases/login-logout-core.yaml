@@ -1,0 +1,11 @@
+id: login-logout-core
+description: Login then logout on core.test.k8s (auth smoke)
+prompt_file: e2e-login-logout-core-test-k8s.md
+expected_status: pass        # TODO: confirm this is the known-good outcome for your env
+max_steps: 40
+tags: [smoke, auth]
+assertions:
+  - {type: is_done}
+  - {type: no_errors}
+  # The flow logs in (phone + PSW_CLIENT) then logs out — adjust markers to your app's UI text.
+  - {type: history_contains_text, value: "logout"}

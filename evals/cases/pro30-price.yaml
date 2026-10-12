@@ -1,0 +1,11 @@
+id: pro30-price
+description: CRM price verification with fidelity discount (arithmetic hotspot — P1.1 target)
+prompt_file: test-pro30-3-spring-2026-ed.md
+expected_status: pass        # TODO: set to the known outcome for the current data snapshot
+max_steps: 80
+tags: [pricing, arithmetic]
+assertions:
+  - {type: is_done}
+  # The prompt emits "ERROR: Mismatch CRM prices" when the computed price != CRM price.
+  # This is exactly the LLM-arithmetic failure P1.1 (deterministic computation) will remove.
+  - {type: history_not_contains_text, value: "Mismatch CRM prices"}

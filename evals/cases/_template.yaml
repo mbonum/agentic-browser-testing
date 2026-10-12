@@ -1,0 +1,29 @@
+# Template eval case. Files starting with "_" are ignored by the loader.
+# Copy this to a new <case-id>.yaml and fill it in.
+
+id: my-case-id                      # unique id (defaults to filename if omitted)
+description: One-line what this checks
+prompt_file: some-prompt.md         # relative to prompts/ ; OR use `task:` for inline
+# task: |
+#   1. Go to https://example.com
+#   2. ...
+expected_status: pass               # HUMAN ground-truth label: pass | fail  (set this!)
+max_steps: 60                       # optional per-case cap
+tags: [smoke]
+
+# Grounded, independent success checks (the honest signal vs the model's self-grade).
+# Available types:
+#   is_done
+#   no_errors
+#   final_url_contains        {value: "..."}
+#   any_url_contains          {value: "..."}
+#   final_result_contains     {value: "..."}
+#   final_result_not_contains {value: "..."}
+#   history_contains_text     {value: "..."}
+#   history_not_contains_text {value: "..."}
+#   min_steps / max_steps     {value: N}
+# All text checks take an optional `ignore_case: true` (default true).
+assertions:
+  - {type: is_done}
+  - {type: no_errors}
+  - {type: history_contains_text, value: "expected success marker"}

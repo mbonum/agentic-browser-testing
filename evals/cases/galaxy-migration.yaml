@@ -1,0 +1,11 @@
+id: galaxy-migration
+description: Galaxy profile migration reaches "Completato" on qas-galaxy
+prompt_file: qas-galaxy-migrations-all.md
+expected_status: pass        # TODO: confirm; uses {{QAS_*_PHONE}} pool tokens (consumes a pair per run)
+max_steps: 100
+tags: [galaxy, migration]
+assertions:
+  - {type: is_done}
+  # Migration status should reach Completato; "Completato con errori" is a failure.
+  - {type: history_contains_text, value: "Completato"}
+  - {type: history_not_contains_text, value: "Completato con errori"}

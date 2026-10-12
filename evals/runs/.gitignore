@@ -1,0 +1,4 @@
+# Eval run artifacts are local output, not source.
+# Commit a curated baseline by copying its results.json out of here if you want to track it.
+*
+!.gitignore
