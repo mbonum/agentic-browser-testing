@@ -35,8 +35,8 @@ theme_map = {
 def create_ui(theme_name="Ocean"):
     css = """
     .gradio-container {
-        width: 70vw !important; 
-        max-width: 70% !important; 
+        width: 70vw !important;
+        max-width: 70% !important;
         margin-left: auto !important;
         margin-right: auto !important;
         padding-top: 10px !important;
@@ -91,7 +91,7 @@ def create_ui(theme_name="Ocean"):
     ui_manager = WebuiManager()
 
     with gr.Blocks(
-        title="QA Browser Agent | DonTouch AI",
+        title="QA Browser Agent",
         theme=theme_map[theme_name],
         css=css,
         js=js_func,
